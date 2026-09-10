@@ -22,6 +22,11 @@ next-env.d.ts
 # The corpus is the exception: seeding reads it, so it has to ship.
 *.md
 !docs/id/*.md
+
+# The take-home note is delivered with the submission, not through the
+# repository. Its exported copies must not slip back in either.
+*.pdf
+*.docx
 docs/*.drawio
 
 # OS
