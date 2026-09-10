@@ -131,8 +131,8 @@ export default function DocumentTable({ chunks }: { chunks: DocChunk[] }) {
                         <footer>
                           <code>{c.id}</code>
                           <span>
-                            {c.token_count} tokens · this is exactly what the specialist
-                            receives when this section is retrieved
+                            {c.token_count} embedding tokens · this is exactly the text
+                            the specialist receives when this section is retrieved
                           </span>
                         </footer>
                       </td>

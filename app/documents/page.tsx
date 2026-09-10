@@ -44,8 +44,9 @@ export default async function Documents() {
           <h2>Documents</h2>
           <p style={{color: 'var(--text-muted)'}}>
             {docs.length} dokumen · {chunks.length} bagian ·{" "}
-            {total.toLocaleString("en-US")} token keseluruhan. Ini adalah sumber data pencarian.
-            Setiap bagian dapat ditarik secara terpisah. Klik pada baris mana saja untuk membaca isinya.
+            {total.toLocaleString("en-US")} token embedding keseluruhan. Ini adalah sumber data
+            pencarian. Setiap bagian dapat ditarik secara terpisah. Klik pada baris mana saja
+            untuk membaca isinya.
           </p>
 
           {error && <p className="hint">Could not load: {error.message}</p>}
@@ -57,7 +58,8 @@ export default async function Documents() {
 
           {chunks.length > 0 && (
             <p className="hint" style={{ marginTop: 22 }}>
-              The whole corpus is {total.toLocaleString("en-US")} tokens. The naive
+              Counted by the embedding model, which is what filled this column — the
+              chat model tokenises the same corpus about 19% cheaper. The naive
               baseline sends all of it on every request; the current version sends
               only the closest few sections.
             </p>
