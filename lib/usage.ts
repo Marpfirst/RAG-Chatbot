@@ -25,6 +25,29 @@ export function answeringAgent(calls: AgentCall[]): "manager" | "specialist" {
   return calls[calls.length - 1]?.agent ?? "manager";
 }
 
+/** Postgres foreign-key violation. */
+const FK_VIOLATION = "23503";
+
+async function createConversation(client: ReturnType<typeof db>, visitorId?: string) {
+  const { data, error } = await client
+    .from("conversations")
+    .insert({})
+    .select("id")
+    .single();
+  if (error) throw new Error(`create conversation: ${error.message}`);
+  return data.id as string;
+}
+
+/**
+ * Returns the conversation the messages were actually written to, which is not
+ * always the one that was asked for.
+ *
+ * A browser keeps its conversation id in sessionStorage, and that id can
+ * outlive the row — the database was reset, or the conversation was deleted.
+ * Every later message then failed its foreign key and the tab stayed broken
+ * until the reader thought to press New chat. Falling back to a fresh
+ * conversation costs one insert on a path that was previously a dead end.
+ */
 export async function persist(opts: {
   conversationId: string;
   question: string;
@@ -32,18 +55,28 @@ export async function persist(opts: {
   calls: AgentCall[];
 }) {
   const client = db();
+  let conversationId = opts.conversationId;
 
-  const { error: userErr } = await client.from("messages").insert({
-    conversation_id: opts.conversationId,
+  let { error: userErr } = await client.from("messages").insert({
+    conversation_id: conversationId,
     role: "user",
     content: opts.question,
   });
+
+  if (userErr?.code === FK_VIOLATION) {
+    conversationId = await createConversation(client);
+    ({ error: userErr } = await client.from("messages").insert({
+      conversation_id: conversationId,
+      role: "user",
+      content: opts.question,
+    }));
+  }
   if (userErr) throw new Error(`insert user message: ${userErr.message}`);
 
   const { data: assistant, error: aErr } = await client
     .from("messages")
     .insert({
-      conversation_id: opts.conversationId,
+      conversation_id: conversationId,
       role: "assistant",
       content: opts.answer,
     })
@@ -58,5 +91,5 @@ export async function persist(opts: {
   );
   if (uErr) throw new Error(`insert usage_log: ${uErr.message}`);
 
-  return assistant.id as number;
+  return { messageId: assistant.id as number, conversationId };
 }

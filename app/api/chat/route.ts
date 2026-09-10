@@ -115,7 +115,9 @@ export async function POST(req: NextRequest) {
       ? await naiveTurn(convId, message)
       : await agentTurn(convId, message);
 
-    await persist({
+    // persist may move the messages to a new conversation if the one the client
+    // sent no longer exists, so the id it returns is the one to report back.
+    const { conversationId: storedIn } = await persist({
       conversationId: convId,
       question: message,
       answer: result.answer,
@@ -123,7 +125,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      conversationId: convId,
+      conversationId: storedIn,
       answer: result.answer,
       agent: answeringAgent(result.calls),
       tokens: totalTokens(result.calls),
