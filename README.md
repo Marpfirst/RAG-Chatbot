@@ -315,6 +315,14 @@ Stated here rather than left to be discovered:
   measured page render was 683 ms. `vercel.json` now pins the function to
   `sin1`. Worth re-measuring on any redeploy: `curl -sI <url>/history` and read
   `X-Vercel-Id`, which names the edge and the execution region.
+- **Navigation used to refetch data that had not changed.** One Chat -> History
+  click cost three Supabase queries: one render plus two from a `router.refresh()`
+  that ran on every mount. It fixed a stale-data bug, but by guessing — a
+  navigation does not know whether anything changed, whereas a mutation does.
+  History is now cached and invalidated once per new answer; Documents, which
+  nothing in the UI writes to, is cached for an hour. Measured the same way
+  afterwards: five back-and-forth navigations cost zero queries, and History
+  after a new answer costs exactly one.
 - **Rate limiting shares a budget across one address.** Requests are counted per
   client address, 15 a minute — generous for a person, but an office behind one
   NAT shares that allowance, and a distributed caller is not stopped at all. It

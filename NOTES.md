@@ -658,6 +658,27 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   `vercel.json` sekarang mematok region ke `sin1`. Pelajarannya sama seperti
   bug cache dulu: yang kelihatan seperti "database lambat" ternyata bukan
   database sama sekali, dan yang menemukannya adalah satu header, bukan tebakan.
+- **Navigasi antar tab dulu memuat ulang data yang tidak berubah.** Diukur
+  sebelum diubah: satu klik Chat -> History memicu **3 query Supabase** — satu
+  render, dua lagi dari `router.refresh()` di `RefreshOnMount` (StrictMode
+  menggandakan efek di dev; di produksi 2). Kunjungan kedua tetap 3, karena
+  tidak ada yang di-cache sama sekali.
+
+  `RefreshOnMount` memang menyelesaikan bug data basi, tapi caranya menebak:
+  ia menyegarkan **setiap kali halaman dibuka**, padahal yang tahu data berubah
+  adalah mutasinya, bukan navigasinya. Sekarang terbalik — halaman di-cache,
+  dan `refreshHistory()` di `app/actions.ts` menandainya basi sekali per
+  jawaban baru. Documents tidak punya mutasi sama sekali di UI, jadi ia
+  di-cache satu jam.
+
+  Hasilnya, diukur ulang dengan cara yang sama: 5 navigasi bolak-balik tanpa
+  chat baru = **0 query, 0 request server**. Setelah kirim chat, buka History =
+  **tepat 1 query**, dan barisnya cocok dengan baris terbaru di database.
+
+  Satu detail yang menentukan: `revalidateTag` saja tidak cukup, karena ada dua
+  cache. Yang membersihkan **router cache di sisi klien** adalah fakta bahwa
+  pemanggilnya sebuah Server Action — itu persis setengah masalah yang dulu
+  bikin History tertinggal satu pertanyaan.
 - **Rate limit berbagi jatah dalam satu alamat.** Dihitung per alamat klien,
   15 per menit. Longgar untuk satu orang, tapi satu kantor di balik NAT berbagi
   angka itu, dan pemanggil terdistribusi sama sekali tidak tertahan. Ini
