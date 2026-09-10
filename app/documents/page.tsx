@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import RefreshOnMount from "@/components/RefreshOnMount";
 import DocumentTable, { type DocChunk } from "@/components/DocumentTable";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -38,6 +39,7 @@ export default async function Documents() {
 
   return (
     <Shell>
+      <RefreshOnMount />
       <div className="page">
         <div className="page-inner">
           <h2>Documents</h2>

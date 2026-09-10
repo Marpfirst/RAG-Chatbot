@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import RefreshOnMount from "@/components/RefreshOnMount";
 import LocalTime from "@/components/LocalTime";
 import { db } from "@/lib/db";
 
@@ -35,6 +36,7 @@ export default async function History() {
 
   return (
     <Shell>
+      <RefreshOnMount />
       <div className="page">
         <div className="page-inner">
           <h2>Token history</h2>
