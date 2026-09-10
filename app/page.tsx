@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import Shell from "@/components/Shell";
 
 type Breakdown = {
@@ -16,7 +17,7 @@ type Source = {
   doc: string;
   section: string;
   similarity: number;
-  snippet: string;
+  text: string;
 };
 
 type Turn = {
@@ -208,16 +209,37 @@ export default function Page() {
             <div className="thread-inner">
               {turns.length === 0 && (
                 <div className="empty">
-                  <h2>Ask anything</h2>
-                  <p>
-                    I can answer general questions or search through your documents.
+                  <div style={{display: 'flex', justifyContent: 'center', marginBottom: 24}}>
+                    <div style={{width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-sidebar)', display: 'grid', placeItems: 'center', position: 'relative'}}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" style={{width: 32, height: 32, strokeWidth: 1.5}}><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM5 10h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zm3 4h2v2H8v-2zm6 0h2v2h-2v-2z" /></svg>
+                      <div style={{position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, background: '#f6e84d', borderRadius: '50%', display: 'grid', placeItems: 'center', boxShadow: '0 0 0 4px var(--bg-main)'}}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#101c3d" style={{width: 14, height: 14, strokeWidth: 3}}><path d="M5 13l4 4L19 7"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                  <h2 style={{color: 'var(--text-main)', fontSize: 26, fontWeight: 700, marginBottom: 12}}>Tanya apa saja</h2>
+                  <p style={{color: 'var(--text-muted)', fontSize: 16, lineHeight: 1.5, marginBottom: 40}}>
+                    Saya dapat menjawab pertanyaan atau<br />mencari dari dokumen Anda.
                   </p>
                   <div className="suggestions">
-                    {SAMPLES.map((s) => (
-                      <button key={s} onClick={() => send(s)}>
-                        {s}
-                      </button>
-                    ))}
+                    <button onClick={() => send("Apa itu SLA?")}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <span style={{fontWeight: 500}}>Apa itu SLA?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{width: 16, height: 16}}><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    </button>
+                    <button onClick={() => send("Jelaskan proses deployment kita.")}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <span style={{fontWeight: 500}}>Jelaskan proses deployment kita.</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{width: 16, height: 16}}><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    </button>
+                    <button onClick={() => send("Apa kata buku panduan karyawan tentang kerja remote?")}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <span style={{fontWeight: 500}}>Apa kata panduan karyawan tentang kerja remote?</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{width: 16, height: 16}}><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    </button>
                   </div>
                 </div>
               )}
@@ -275,11 +297,6 @@ export default function Page() {
                                 <span>{t.sources[0].section}</span>
                               </span>
                             </div>
-                            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" style={{width: 16, height: 16, stroke: 'var(--text-muted)', fill: 'none'}}>
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" />
-                              <line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
                           </div>
                         )}
                       </div>
@@ -355,7 +372,7 @@ export default function Page() {
               </button>
             </form>
             <div className="composer-hint">
-              DocuMind can answer general questions or search through your documents.
+              Sigap dapat menjawab pertanyaan atau mencari informasi dari dokumen Anda.
             </div>
           </div>
         </div>
@@ -423,21 +440,27 @@ function Panel({ turn, onClose }: { turn: Turn; onClose: () => void }) {
                   <tr>
                     <th>Source document</th>
                     <td>
-                      <div style={{display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--border)', padding: '10px 12px', borderRadius: 8}}>
-                        <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" style={{width: 20, height: 20, fill: 'none', stroke: 'currentColor'}}>
+                      {/* A real link to the Documents page, scrolled to this
+                          exact section. The external-link icon now describes
+                          something that happens.
+                          Chunk ids contain a '#' ("runbook#jendela-deploy"), so
+                          the fragment has to be encoded or the URL ends up with
+                          two of them. */}
+                      <Link className="source-link" href={`/documents#${encodeURIComponent(turn.sources[0].id)}`}>
+                        <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
                           <path d="M14 3v5h5" />
                         </svg>
-                        <div style={{flex: 1}}>
-                          <strong style={{display: 'block', fontSize: 13, color: 'var(--text-main)', fontWeight: 600}}>{DOC_TITLES[turn.sources[0].doc] ?? turn.sources[0].doc}</strong>
-                          <small style={{marginTop: 2, fontSize: 11, color: 'var(--text-muted)'}}>{turn.sources[0].section}</small>
-                        </div>
-                        <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" style={{width: 14, height: 14, stroke: 'var(--text-muted)', fill: 'none'}}>
+                        <span>
+                          <strong>{DOC_TITLES[turn.sources[0].doc] ?? turn.sources[0].doc}</strong>
+                          <small>{turn.sources[0].section}</small>
+                        </span>
+                        <svg className="go" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                           <polyline points="15 3 21 3 21 9" />
                           <line x1="10" y1="14" x2="21" y2="3" />
                         </svg>
-                      </div>
+                      </Link>
                     </td>
                   </tr>
                 )}
@@ -453,17 +476,7 @@ function Panel({ turn, onClose }: { turn: Turn; onClose: () => void }) {
                 <h3>Retrieved content ({turn.sources.length})</h3>
                 <ol className="excerpts">
                   {turn.sources.map((s) => (
-                    <li key={s.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                      <div style={{flex: 1}}>
-                        {s.snippet}…
-                        <em style={{fontStyle: 'normal'}}>
-                          {s.section}
-                        </em>
-                      </div>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{width: 16, height: 16, strokeWidth: 2, flex: 'none', marginLeft: 16}}>
-                        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </li>
+                    <Excerpt key={s.id} source={s} />
                   ))}
                 </ol>
               </>
@@ -509,5 +522,38 @@ function Panel({ turn, onClose }: { turn: Turn; onClose: () => void }) {
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * One retrieved chunk. Collapsed it shows the opening lines; expanded it shows
+ * the whole thing, because a reader checking whether the answer is supported
+ * needs the text the model actually saw, not a preview of it.
+ */
+function Excerpt({ source }: { source: Source }) {
+  const [open, setOpen] = useState(false);
+  const long = source.text.length > 150;
+
+  return (
+    <li className="excerpt" data-open={open}>
+      <button
+        className="excerpt-toggle"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        disabled={!long}
+      >
+        <span className="excerpt-body">
+          <span className={open || !long ? "full" : "clamped"}>{source.text}</span>
+          <em>
+            {source.section} · similarity {source.similarity.toFixed(3)}
+          </em>
+        </span>
+        {long && (
+          <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+    </li>
   );
 }

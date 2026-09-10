@@ -83,11 +83,18 @@ export default function Shell({
 
   return (
     <div className={`shell ${isCollapsed ? "is-collapsed" : ""}`}>
+      {open && (
+        <div 
+          className="mobile-overlay mobile-only" 
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <aside className="sidebar" data-open={open}>
         <div className="sidebar-header">
           <div className="brand">
-            <h1>DocuMind</h1>
-            <p>Your documents,<br/>answered.</p>
+            <h1>Sigap</h1>
+            <p>Chatbot untuk dokumen internal.</p>
           </div>
           <button className="collapse-btn desktop-only" onClick={toggleCollapse} aria-label="Toggle Sidebar">
             <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -159,9 +166,9 @@ export default function Shell({
 
       <div className="main-area">
         <div className="topbar">
-          <strong>DocuMind</strong>
-          <button onClick={() => setOpen(true)} aria-label="Buka menu">
-            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeWidth="2" fill="none" stroke="currentColor" width="20" height="20">
+          <strong style={{fontSize: 20, color: 'var(--text-main)'}}>Sigap</strong>
+          <button onClick={() => setOpen(true)} aria-label="Buka menu" style={{background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: 8}}>
+            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeWidth="2" fill="none" stroke="currentColor" width="24" height="24">
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
           </button>

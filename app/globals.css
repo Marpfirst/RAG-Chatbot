@@ -116,6 +116,8 @@ textarea {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .shell.is-collapsed .sidebar-header {
@@ -667,15 +669,6 @@ nav a svg {
 }
 
 .shell.is-collapsed .theme-toggle-wrap {
-  justify-content: center;
-  border-top: none;
-}
-
-.shell.is-collapsed .theme-toggle-wrap span {
-  display: none;
-}
-
-.shell.is-collapsed .theme-toggle-wrap .toggle-switch {
   display: none;
 }
 
@@ -1019,8 +1012,187 @@ table.data th.num {
     z-index: 40;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
+    gap: 24px;
   }
+  /* Force sidebar to expanded state on mobile regardless of is-collapsed */
+  .shell.is-collapsed .sidebar { padding: 32px 24px 24px; align-items: stretch; }
+  .shell.is-collapsed .sidebar-header { justify-content: space-between; }
+  .shell.is-collapsed .brand { opacity: 1; width: auto; overflow: visible; }
+  .shell.is-collapsed nav a { padding: 12px 18px; justify-content: flex-start; border-radius: var(--radius-pill); }
+  .shell.is-collapsed nav a span { display: inline; }
+  .shell.is-collapsed .session { display: block; }
+  .shell.is-collapsed .user-profile { padding-top: 24px; }
+  .shell.is-collapsed .user-profile .user-info { display: block; }
+  .shell.is-collapsed .theme-toggle-wrap { display: flex; }
+  .shell.is-collapsed .theme-icon-btn { display: none; }
   .sidebar[data-open="true"] {
     transform: none;
   }
+  
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 30;
+    animation: fadeIn 0.2s ease forwards;
+  }
+  
+  .panel {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    width: 100%;
+    height: 100dvh;
+    border-left: none;
+    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ---------------------------------------------------------- source link */
+
+/* Real navigation to the Documents page, anchored at this section. The
+   external-link icon only exists because something actually happens. */
+.source-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.source-link:hover {
+  border-color: var(--text-muted);
+  background: rgba(127, 127, 127, 0.06);
+}
+
+.source-link > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.source-link > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.source-link strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.source-link small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.source-link .go {
+  width: 14px;
+  height: 14px;
+  stroke: var(--text-muted);
+}
+
+/* ---------------------------------------------------------- excerpts */
+
+.excerpt {
+  display: block;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.excerpt-toggle {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.excerpt-toggle:disabled {
+  cursor: default;
+}
+
+.excerpt-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-main);
+}
+
+/* Collapsed excerpts clamp to four lines; expanded ones show everything. */
+.excerpt-body .clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.excerpt-body .full {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.excerpt-body em {
+  display: block;
+  margin-top: 6px;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.excerpt .chev {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  stroke-width: 2;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.excerpt[data-open="true"] .chev {
+  transform: rotate(180deg);
+}
+
+/* ---------------------------------------------------------- doc anchors */
+
+/* Rows are link targets from the details panel. scroll-margin keeps the row
+   clear of the sticky header once it is jumped to. */
+table.data tbody tr[id] {
+  scroll-margin-top: 90px;
+}
+
+/* Applied by components/HashHighlight.tsx. `:target` is useless here because
+   Next navigates client-side and the browser never marks a target element. */
+/* Painted on the cells, not the row: a <tr> background sits behind its <td>
+   backgrounds and stays invisible whenever those are not transparent. */
+table.data tbody tr.row-flash > td {
+  background: rgba(246, 232, 77, 0.32);
+}
+
+table.data tbody tr > td {
+  transition: background 0.9s ease;
 }

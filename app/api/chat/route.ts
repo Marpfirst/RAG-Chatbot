@@ -157,17 +157,17 @@ async function agentTurn(convId: string, message: string) {
   return { answer: specialist.text, calls, sources: toSources(search.chunks) };
 }
 
-/** Strip the contextual header back off for display, and trim to a preview. */
+/** Strip the contextual header back off — it is shown as structured fields instead. */
 function toSources(chunks: { id: string; doc: string; section: string; content: string; similarity: number }[]) {
   return chunks.map((c) => ({
     id: c.id,
     doc: c.doc,
     section: c.section,
     similarity: c.similarity,
-    snippet: c.content
-      .replace(/^\[[^\]]*\]\s*/, "")
-      .replace(/\s+/g, " ")
-      .slice(0, 160),
+    // Full text, not a preview. The panel truncates for display but lets the
+    // reader expand — a snippet cut at 160 characters cannot be checked against
+    // the answer, which is the whole point of showing sources.
+    text: c.content.replace(/^\[[^\]]*\]\s*/, "").trim(),
   }));
 }
 

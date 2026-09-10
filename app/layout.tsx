@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DocuMind",
-  description: "Your documents, answered.",
+  title: "Sigap",
+  description: "AI Assistant for your documents",
 };
 
 /**

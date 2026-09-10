@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import HashHighlight from "@/components/HashHighlight";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 
@@ -26,6 +27,7 @@ export default async function Documents() {
 
   return (
     <Shell>
+      <HashHighlight />
       <div className="page">
         <div className="page-inner">
           <h2>Documents</h2>
@@ -53,7 +55,7 @@ export default async function Documents() {
                   </thead>
                   <tbody>
                     {chunks.map((c) => (
-                      <tr key={c.id}>
+                      <tr key={c.id} id={c.id}>
                         <td>
                           <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
                             <div style={{width: 40, height: 40, borderRadius: 10, background: 'var(--bubble-user)', display: 'grid', placeItems: 'center', color: 'var(--text-muted)'}}>
