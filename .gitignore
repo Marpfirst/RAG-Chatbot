@@ -18,12 +18,11 @@ next-env.d.ts
 .vercel/
 *.log
 
-# personal interview prep, not part of the project
-PREP.md
-# held back until reviewed — still present locally, just not published yet
-README.md
+# Every write-up is held back until reviewed — all still present locally.
+# The corpus is the exception: seeding reads it, so it has to ship.
+*.md
+!docs/id/*.md
 docs/*.drawio
-scratch.md
 
 # OS
 .DS_Store
