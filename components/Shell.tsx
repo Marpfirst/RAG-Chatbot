@@ -107,11 +107,11 @@ export default function Shell({
           {session && <div className="session">{session}</div>}
 
           <div className="theme-toggle-wrap">
-            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
               {isDark ? (
-                <i className="far fa-moon" style={{ fontSize: '16px' }}></i>
+                <i className="far fa-moon" style={{ fontSize: '18px' }}></i>
               ) : (
-                <i className="far fa-sun" style={{ fontSize: '16px' }}></i>
+                <i className="far fa-sun" style={{ fontSize: '18px' }}></i>
               )}
               <span>{isDark ? "Dark mode" : "Light mode"}</span>
             </div>
