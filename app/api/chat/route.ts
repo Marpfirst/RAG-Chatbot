@@ -67,6 +67,12 @@ export async function POST(req: NextRequest) {
         cached: c.cached_tokens,
         embed: c.embed_tokens,
       })),
+      model: result.calls.at(-1)?.model ?? "",
+      latencyMs: result.calls.reduce((n, c) => n + (c.latency_ms ?? 0), 0),
+      // Chunk text is sent to the client so the details panel can show what the
+      // answer was actually grounded in. It costs no model tokens — it is data
+      // the server already had.
+      sources: result.sources ?? [],
       // Exposed so scripts/eval.ts can score retrieval, not just the answer.
       retrieved: result.calls.at(-1)?.retrieved_ids ?? [],
       topSimilarity: result.calls.at(-1)?.top_similarity ?? null,
@@ -106,7 +112,7 @@ async function agentTurn(convId: string, message: string) {
       routed: false,
       latency_ms: manager.latency,
     });
-    return { answer: manager.text, calls };
+    return { answer: manager.text, calls, sources: [] };
   }
 
   // Embed the original question together with the manager's rewritten query.
@@ -148,7 +154,21 @@ async function agentTurn(convId: string, message: string) {
     latency_ms: specialist.latency,
   });
 
-  return { answer: specialist.text, calls };
+  return { answer: specialist.text, calls, sources: toSources(search.chunks) };
+}
+
+/** Strip the contextual header back off for display, and trim to a preview. */
+function toSources(chunks: { id: string; doc: string; section: string; content: string; similarity: number }[]) {
+  return chunks.map((c) => ({
+    id: c.id,
+    doc: c.doc,
+    section: c.section,
+    similarity: c.similarity,
+    snippet: c.content
+      .replace(/^\[[^\]]*\]\s*/, "")
+      .replace(/\s+/g, " ")
+      .slice(0, 160),
+  }));
 }
 
 /**
@@ -195,5 +215,6 @@ async function naiveTurn(convId: string, message: string) {
   return {
     answer: res.choices[0].message.content?.trim() || "-",
     calls,
+    sources: [],
   };
 }
