@@ -6,8 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "probe": "tsx scripts/probe.ts",
+    "repro": "tsx scripts/repro.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

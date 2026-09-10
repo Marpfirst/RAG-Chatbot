@@ -50,7 +50,7 @@ const DOC_TITLES: Record<string, string> = {
 const clock = () =>
   new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-const STORAGE_KEY = "chat.session.v1";
+const STORAGE_KEY = "chat.session.v2";
 
 type Stored = { convId?: string; turns: Turn[] };
 
@@ -66,7 +66,21 @@ type Stored = { convId?: string; turns: Turn[] };
 function load(): Stored | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Stored) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Stored;
+    if (!Array.isArray(parsed?.turns)) return null;
+
+    // Drop anything that does not match the shape this build expects. Persisted
+    // state has a schema; a stale entry should start a fresh session, not throw
+    // in the middle of a render.
+    const turns = parsed.turns.filter(
+      (t) =>
+        t &&
+        typeof t.id === "number" &&
+        typeof t.text === "string" &&
+        (!t.sources || t.sources.every((s) => typeof s?.text === "string"))
+    );
+    return { convId: parsed.convId, turns };
   } catch {
     return null;
   }
@@ -532,7 +546,8 @@ function Panel({ turn, onClose }: { turn: Turn; onClose: () => void }) {
  */
 function Excerpt({ source }: { source: Source }) {
   const [open, setOpen] = useState(false);
-  const long = source.text.length > 150;
+  const text = source.text ?? "";
+  const long = text.length > 150;
 
   return (
     <li className="excerpt" data-open={open}>
@@ -543,7 +558,7 @@ function Excerpt({ source }: { source: Source }) {
         disabled={!long}
       >
         <span className="excerpt-body">
-          <span className={open || !long ? "full" : "clamped"}>{source.text}</span>
+          <span className={open || !long ? "full" : "clamped"}>{text}</span>
           <em>
             {source.section} · similarity {source.similarity.toFixed(3)}
           </em>

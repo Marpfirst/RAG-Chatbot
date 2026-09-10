@@ -30,6 +30,19 @@ npm run seed        # chunk -> embed -> store, prints corpus size
 npm run dev
 ```
 
+## A note on `npm run build`
+
+`next dev` and `next build` both write to `.next`. Running the build while the
+dev server is up corrupts it, and every route starts returning 404 with
+"Fast Refresh had to perform a full reload" in the log. If that happens:
+
+```bash
+rm -rf .next && npm run dev
+```
+
+`npm run typecheck` checks the same errors without touching `.next`, so it is
+the one to reach for while the dev server is running.
+
 ## Evaluation
 
 With the dev server running:
