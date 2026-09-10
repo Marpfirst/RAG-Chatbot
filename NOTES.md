@@ -95,6 +95,12 @@ terukur. Konfigurasi termurah bukan yang terbaik.
 - **Prompt caching.** Tidak bisa: ambang cache OpenAI 1.024 token, prompt kita
   ~390. Sistemnya sudah terlalu kecil untuk mendapat manfaat caching.
 
+  Ada ironi yang terlihat di `usage_log`: caching justru **aktif di baseline
+  naif**, yang prompt-nya 2.500 token — 2.432 di antaranya terbaca dari cache.
+  Jadi dalam hitungan rupiah baseline naif tidak semahal kelihatannya. Dalam
+  hitungan token, yang jadi kriteria di sini, tetap 2.654. Kalau yang dioptimasi
+  adalah biaya dan bukan token, sebagian keputusan di dokumen ini akan berbeda.
+
 ### Keputusan lain yang menghemat
 
 - Chunking per heading, **overlap 0%**. Konvensi menyarankan 10-20%, tapi overlap
