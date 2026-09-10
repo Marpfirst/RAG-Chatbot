@@ -23,6 +23,7 @@ PREP.md
 # held back until reviewed — still present locally, just not published yet
 README.md
 docs/*.drawio
+scratch.md
 
 # OS
 .DS_Store
