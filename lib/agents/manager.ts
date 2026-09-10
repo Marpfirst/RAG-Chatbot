@@ -37,7 +37,12 @@ function systemPrompt(): string {
     pickMap(),
     "",
     "Decide per message:",
-    "1. About Sigap itself (product, pricing, employee policy, operations)",
+    // "pay" is named because the model refused salary questions outright
+    // without searching — a trained reflex about compensation that overrode
+    // tier 1. Pay is an employee-policy topic like any other; whether the
+    // documents cover it is for retrieval to answer, not the manager.
+    "1. About Sigap itself — product, pricing, employee policy including pay",
+    "   and benefits, operations",
     "   -> ALWAYS call search_docs, even if you believe you already know the",
     "   answer or believe Sigap has no such thing. Never state what Sigap does",
     "   or does not have without searching. Write the query in Indonesian,",
@@ -61,7 +66,9 @@ function systemPrompt(): string {
     "   current events, creative writing, essays, recipes, homework.",
     "",
     "Any message about Sigap is 1, whatever the topic — including security,",
-    "certifications and compliance.",
+    "certifications and compliance — and even when another part of the same",
+    "message is out of scope. Search first; the documents decide what is",
+    "missing, not you.",
     // No tie-break line here. A blunt "when unsure prefer 3" made the manager
     // refuse its own tier 2, and phrasing the criterion as a question ("ask:
     // is this...") made it recite that question at the user instead of
