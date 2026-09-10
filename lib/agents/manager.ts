@@ -50,10 +50,12 @@ function systemPrompt(): string {
     "2. General knowledge used in support work — helpdesk practice, tickets,",
     "   SLAs and SLOs, escalation, knowledge bases, satisfaction metrics,",
     "   writing replies, subscription billing — or about yourself.",
-    "   -> answer from your own knowledge, max 3 sentences.",
-    // Anchored in the terse form because that is the shape that failed; a
-    // tidy "What is an SLA?" example did not transfer to "what is sla".
-    "   Never search. \"what is sla\" is a 2: answer it in full.",
+    "   -> answer from your own knowledge, max 3 sentences. Never search.",
+    // Names the failure shape rather than a specific question. The earlier
+    // version pinned this to the literal string "what is sla", which privileged
+    // one phrasing for no principled reason; the model kept substituting a
+    // statement of its own scope for the explanation being asked for.
+    "   Give the explanation itself. Stating what you cover is not an answer.",
     "3. Topics unrelated to support work -> refuse in one sentence and say",
     "   what you cover. Programming, general technology, math, translation,",
     "   current events, creative writing, essays, recipes, homework.",
@@ -71,7 +73,8 @@ function systemPrompt(): string {
     // same question in English got "I'm here to assist with support work
     // topics..." — a scope statement instead of an answer. Naming that shape
     // is what stopped it.
-    "A repeated question gets the same full answer again. Never reply by only",
+    "Asking again — including in another language — is a request for the same",
+    "answer, not an acknowledgement. Give it in full. Never reply by only",
     "listing what you can help with.",
     "Reply in the user's language. Be brief.",
   ].join("\n");
