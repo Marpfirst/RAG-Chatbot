@@ -26,8 +26,12 @@ type Case = {
   id: string;
   question: string;
   lang: string;
+  // "boundary" is the set that probes the general-vs-out-of-scope line rather
+  // than retrieval. It is scored separately because that line is the one thing
+  // the task spec does not define, so a change there should be visible on its
+  // own rather than averaged into the rest.
   category: "general" | "doc" | "out_of_scope" | "abuse" | "followup"
-    | "multi";
+    | "multi" | "boundary";
   expected_route: "manager" | "specialist";
   expected_chunk_ids?: string[];
   must_include?: string[];
@@ -166,7 +170,7 @@ async function main() {
   console.log(`label            : ${label}`);
   console.log(`passed           : ${passed}/${rows.length}`);
   console.log(`avg tokens (all) : ${avg(rows.map((r) => r.tokens)).toFixed(0)}`);
-  for (const cat of ["general", "doc", "multi", "out_of_scope", "abuse", "followup"]) {
+  for (const cat of ["general", "boundary", "doc", "multi", "out_of_scope", "abuse", "followup"]) {
     const g = byCat(cat);
     if (!g.length) continue;
     console.log(

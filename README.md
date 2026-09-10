@@ -109,6 +109,11 @@ answer or emits a `search_docs` tool call in its normal turn, so routing adds no
 request at all — and the same call rewrites the question into a self-contained
 search query, which is what makes follow-ups like *"and the bigger plan?"* work.
 
+The decision is one question, not a list of allowed topics: **does a correct
+answer need a fact that only Sigap's documents hold?** If yes, search. If no,
+answer it when the topic belongs to the domain and decline when it does not.
+Neither the length of the question nor the length of its answer is a criterion.
+
 ### 📉 A bounded worst case, not just a good average
 
 `max_tokens` is capped server-side, over-long input is rejected before any API
@@ -185,24 +190,33 @@ Full diagrams — runtime, seeding, and where the token numbers come from — ar
 
 ## 📊 Results
 
-Measured against a fixed 24-question golden set, token counts taken from the
+Measured against a fixed 34-question golden set, token counts taken from the
 API's `usage` field:
 
 | | Naive baseline | This system |
 |---|---|---|
-| Tokens per question | 2,654 | **674** (−75%) |
-| Golden set | — | **24/24** |
+| Tokens per question | 2,654 | **842** (−68%) |
+| Golden set | — | **34/34** |
 | recall@k | — | **100%** |
 
 Per category:
 
 | Category | Naive | Now |
 |---|---|---|
-| General knowledge | 2,640 | 518 |
-| Needs the documents | 2,519 | 890 |
-| Comparison across two sections | 2,636 | 888 |
-| Absent from the documents | 2,554 | 715 |
-| Out of domain | 3,296 | 481 |
+| General knowledge | 2,640 | 692 |
+| Scope boundary | — | 683 |
+| Needs the documents | 2,519 | 1,078 |
+| Comparison across two sections | 2,636 | 1,093 |
+| Absent from the documents | 2,554 | 893 |
+| Out of domain | 3,296 | 655 |
+| Follow-up question | 2,575 | 1,165 |
+
+The golden set grew from 24 to 34 questions, so the totals are not directly
+comparable to an earlier reading of this table. The comparable measurement is
+the one taken on the same 34 questions before and after the routing rewrite:
+**31/34 at 789 tokens → 34/34 at 842 tokens.** Fifty-three more tokens per
+question bought three classes of in-domain question that used to be refused
+outright.
 
 The naive baseline — whole corpus in every request, full history, no retrieval —
 is still in the repository behind `NAIVE_MODE=true`, so the "before" number can
@@ -269,9 +283,21 @@ Stated here rather than left to be discovered:
   query has changed.
 
   This is the honest form of a number the harness reports as *"precision@k
-  42%"*. That figure looks worse than it is: when one chunk is correct and five
+  36%"*. That figure looks worse than it is: when one chunk is correct and five
   are sent, precision **cannot** exceed 0.20 — it is arithmetic, not quality.
   The tokens are the real cost.
+- **The line between "general but relevant" and "out of domain" has no
+  objective answer.** The task specification says the manager may answer general
+  questions and does not define *general*, so every routing score in this
+  repository is measured against one interpretation of that word rather than
+  against a supplied key. 34/34 means the system is consistent with that
+  interpretation, not that the interpretation is right. *"Apa itu API?"* is
+  answered and *"What is Python?"* is refused; both are technical terms, and
+  only a judgement call separates them.
+- **Repeating an identical question several times in one conversation can move
+  the route.** The fourth *"what is sla"* in a row turns into a document search
+  and comes back "not in the documents", after three correct answers. Three
+  fixes were tried and measured; none moved it.
 - **Rate limiting shares a budget across one address.** Requests are counted per
   client address, 15 a minute — generous for a person, but an office behind one
   NAT shares that allowance, and a distributed caller is not stopped at all. It

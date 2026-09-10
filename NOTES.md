@@ -14,21 +14,35 @@ mengembalikan jawaban, atau sebuah `search_docs` tool call. Pendekatan "call
 klasifikasi terpisah" membuat setiap pertanyaan gampang membayar dua kali; di
 sini routing tidak menambah biaya sama sekali.
 
-Aturannya tiga tingkat, bukan dua:
+Pertanyaan yang dijawab manager adalah **satu pertanyaan, bukan tiga aturan**:
+apakah jawaban yang benar butuh fakta yang hanya ada di dokumen Sigap?
 
-| Jenis | Contoh | Rute |
-|---|---|---|
-| Butuh fakta tentang Sigap | "Berapa harga paket Tumbuh?" | `search_docs` → specialist |
-| Umum tapi relevan domain | "Apa itu SLA?" | manager jawab, maks 3 kalimat |
-| Di luar domain | "Tulis esai 2000 kata" | manager tolak, satu kalimat |
+| Langkah | Kriteria | Contoh | Rute |
+|---|---|---|---|
+| STEP 1 | butuh fakta spesifik Sigap | "Berapa harga paket Tumbuh?" | `search_docs` → specialist |
+| STEP 2 | tidak butuh, dan topiknya masih di domain asisten ini | "Apa itu SLA?" | manager jawab, maks 3 kalimat |
+| STEP 3 | tidak butuh, dan topiknya di luar domain | "Tulis esai 2000 kata" | manager tolak, satu kalimat |
+
+Yang **bukan** kriteria: panjang pertanyaan, huruf besar-kecilnya, dan panjang
+jawaban yang akan keluar. Ketiganya sempat dipakai sebagai proksi dan ketiganya
+salah — pesan dua kata huruf kecil bisa butuh retrieval, dan pertanyaan yang
+jawabannya panjang bisa tetap di dalam domain. Aturannya sekarang ditulis
+eksplisit di prompt supaya tidak diam-diam dipakai lagi.
+
+Yang juga bukan kriteria: **daftar kategori terlarang**. Versi sebelumnya
+menyebutkan "pemrograman, teknologi umum, matematika, terjemahan, tulisan
+kreatif" satu per satu, dan gagal persis seperti daftar selalu gagal — "Apa itu
+API?", "Apa itu webhook?" dan "Apa itu reimbursement?" masing-masing berjarak
+satu langkah dari daftar yang diizinkan, jadi ketiganya ditolak mentah-mentah.
+Yang dipakai sekarang adalah relevansi domain, bukan enumerasi.
 
 Tingkat ketiga sengaja ada. "Pertanyaan umum" yang tak berbatas adalah lubang
 token: tanpa tingkat itu, permintaan esai dijawab patuh dan badge menampilkan
 ribuan token.
 
-Dasar keputusannya adalah **peta dokumen** di system prompt manager — nama
+Bahan keputusannya adalah **peta dokumen** di system prompt manager — nama
 dokumen plus beberapa judul section. Saat ragu, manager condong ke specialist.
-Pertanyaan yang menyebut Sigap **selalu** lewat retrieval, bahkan ketika model
+Pertanyaan yang butuh fakta Sigap **selalu** lewat retrieval, bahkan ketika model
 merasa sudah tahu jawabannya; itu menutup satu mode halusinasi dengan biaya
 ~35 token per pertanyaan.
 
@@ -59,6 +73,8 @@ sendiri, bukan sekadar dipercaya.
 | + embed pertanyaan asli + query manager | 619 | 18/18 | |
 | + konsistensi antar-giliran | 666 | 18/18 | lihat §4 |
 | + batas di luar domain diperketat | **+70/pertanyaan** | **24/24** | golden set 18 → 24 soal, lihat §4 |
+| golden set diperluas (24 → 34 soal) | 789 | 31/34 | 3 topik dalam domain ternyata ditolak |
+| + routing berbasis cakupan, bukan daftar | **842** | **34/34** | +53 token, lihat §4 |
 
 **2.654 → 666 token, turun 75%**, dengan 18/18 lulus pada golden set 18 soal.
 
@@ -84,9 +100,35 @@ konteks, bukan 3.034), **pagar `max_tokens` plus penolakan di luar domain**
 (kasus terburuk turun dari 3.885 jadi ~370 token), lalu **memadatkan peta
 dokumen**.
 
-Perhatikan arah tabelnya: angka turun sampai 456, lalu **naik lagi** ke 666.
-Kenaikan itu disengaja — setiap kenaikan membeli satu perbaikan kebenaran yang
-terukur. Konfigurasi termurah bukan yang terbaik.
+Perhatikan arah tabelnya: angka turun sampai 456, lalu **naik lagi** ke 666,
+lalu ke 842. Kenaikan itu disengaja — setiap kenaikan membeli satu perbaikan
+kebenaran yang terukur. Konfigurasi termurah bukan yang terbaik.
+
+Dua baris terakhir perlu dibaca hati-hati. Golden set diperluas dulu dari 24 ke
+34 soal **tanpa mengubah kode sama sekali**, supaya angka "sebelum" dan
+"sesudah" diukur pada kumpulan soal yang sama. Pada 34 soal itu, sistem lama
+mendapat 31/34 dengan 789 token; sistem baru mendapat 34/34 dengan 842 token.
+Jadi harga jujurnya adalah **+53 token per pertanyaan (+6,7%) untuk tiga kelas
+pertanyaan dalam domain yang sebelumnya ditolak.**
+
+Percobaan menurunkan token setelah itu, semuanya diukur satu variabel per
+langkah:
+
+| Yang dicoba | avg token | Lulus | Putusan |
+|---|---|---|---|
+| daftar contoh domain dibuang dari prompt | 853 → **840** | 34/34 | **dipakai** |
+| aturan "software bukan berarti dalam cakupan" dibuang | 853 → **840** | 34/34 | **dipakai** |
+| kalimat kedua aturan anti-deflection dibuang | 871 | 32/34 | ditolak, 25 token untuk 2 kasus |
+| dua klausa STEP 1 yang tumpang tindih digabung | 831 | 33/34 | ditolak, 8 token untuk 1 kasus |
+| `MATCH_COUNT` 5 → 4 | 823 | 33/34 | ditolak, pertanyaan susulan patah |
+| `MATCH_COUNT` 5 → 3 | 803 | 33/34 | ditolak, pertanyaan susulan patah |
+| `HISTORY_TURNS` 4 → 2 | 840 | 34/34 | ditolak, lihat di bawah |
+
+`HISTORY_TURNS=2` lulus penuh dan memangkas percakapan panjang cukup banyak
+(giliran ke-8 di `scripts/repro.ts`: 926 → 655 token). Tetap ditolak karena
+angka itu dihitung dalam **pesan**, bukan pertukaran: 2 berarti satu tanya-jawab,
+tanpa sisa sama sekali untuk pertanyaan susulan bertingkat. Di golden set
+hematnya cuma 2 token, karena hampir semua soalnya satu giliran.
 
 ### Yang dicoba lalu ditolak
 
@@ -129,14 +171,30 @@ terukur. Konfigurasi termurah bukan yang terbaik.
 
 ## 3. Bagaimana memastikan jawabannya masih benar
 
-`eval/golden.jsonl` — 24 pertanyaan, enam kategori: umum, butuh dokumen,
-perbandingan dua section, tidak ada di dokumen, permintaan di luar domain, dan
-pertanyaan susulan yang bergantung pada riwayat. Beberapa berbahasa Inggris.
+`eval/golden.jsonl` — 34 pertanyaan, tujuh kategori: umum, batas cakupan, butuh
+dokumen, perbandingan dua section, tidak ada di dokumen, permintaan di luar
+domain, dan pertanyaan susulan yang bergantung pada riwayat. Beberapa berbahasa
+Inggris.
 
-Tujuh dari 24 menguji batas "di luar domain", termasuk yang berdekatan dan
+Tujuh dari 34 menguji batas "di luar domain", termasuk yang berdekatan dan
 mudah tertukar: pemrograman, matematika, terjemahan, pengetahuan umum. Enam di
 antaranya ditambahkan setelah Python lolos (§4) — wilayah yang tidak diuji
 adalah wilayah yang bocor.
+
+Sepuluh soal terakhir (`b01`-`b10`) adalah kategori `boundary`, ditambahkan
+untuk menguji garis "umum tapi relevan" lawan "di luar domain" secara langsung:
+istilah teknis (`Apa itu API?`, `Apa itu webhook?`), istilah HR (`Apa itu
+reimbursement?`), praktik helpdesk (`Bagaimana cara membuat knowledge base yang
+baik?`), permintaan pemrograman (`Buatkan game Snake dengan Python.`), kosakata
+pembaca yang tidak dipakai dokumen (`Berapa batas attachment Sigap?`, `Hari apa
+karyawan Sigap WFH?`), huruf besar-kecil yang aneh (`WHAT IS SLA`, `wHaT iS
+sLa`), dan pertanyaan susulan berbentuk elipsis (`Kalau yang sakit?`).
+Kategorinya dipisah supaya perubahan di garis itu terlihat sendiri, tidak
+tenggelam dirata-rata dengan sisanya.
+
+Contoh domain yang ditulis di prompt **sengaja bukan** kata-kata yang diuji di
+sini. Kalau `API` dan `webhook` ditulis di prompt, `b01` dan `b06` berhenti
+menguji apa pun.
 
 Pengukurannya tiga lapis, supaya regresi bisa dilacak ke lapisan penyebabnya:
 
@@ -340,37 +398,75 @@ Batas tier 2 lawan tier 3 tidak begitu. "Umum" itu tak berbatas, dan "relevan
 dengan pekerjaan dukungan pelanggan" adalah penilaian, bukan aturan. Buktinya
 ada di pengujian sendiri:
 
-| Pertanyaan | Rute | Benar? |
+Spesifikasi tugasnya sendiri tidak mendefinisikan batas ini. Yang tertulis
+hanya "pertanyaan umum bisa dijawab manager" — dan "umum" tidak dijelaskan.
+Jadi setiap angka di bawah ini diukur terhadap **penafsiran saya**, bukan
+terhadap kunci jawaban yang diberikan.
+
+Versi lama memakai daftar topik yang diizinkan. Hasilnya, diukur:
+
+| Pertanyaan | Versi lama | Versi sekarang |
 |---|---|---|
-| Apa itu CSAT? | dijawab | ya |
-| Apa bedanya tiket dan insiden? | dijawab | ya |
-| Bagaimana membuat knowledge base yang baik? | ditolak | **tidak** |
+| Apa itu SLA? | dijawab | dijawab |
+| What is a helpdesk ticket? | dijawab | dijawab |
+| Bagaimana membuat knowledge base yang baik? | **ditolak** | dijawab |
+| Apa itu API? | **ditolak** | dijawab |
+| Apa itu webhook? | **ditolak** | dijawab |
+| Apa itu reimbursement? | **ditolak** | dijawab |
 | Apa itu Zendesk? | ditolak | bisa diperdebatkan |
-| Apa itu webhook? | ditolak | bisa diperdebatkan |
+| What is Python? | ditolak | ditolak |
 
-Tiga baris terakhir tidak punya jawaban yang disepakati. Zendesk itu pesaing di
-domain yang sama — layak dijelaskan singkat, atau justru bukan urusan asisten
-internal? Keduanya bisa dibela.
+Empat baris yang tebal itu semuanya di dalam domain menurut penafsiran mana
+pun, dan semuanya ditolak — bukan karena modelnya salah menilai, tapi karena
+masing-masing berjarak satu langkah dari daftar yang ditulis di prompt.
+Itulah alasan daftarnya dibuang dan diganti relevansi domain.
 
-Yang bisa dilakukan hanyalah menyempitkan wilayah abu-abunya dengan
-memperpanjang daftar contoh, lalu **mengukur di mana batasnya jatuh** dan
-menerima bahwa sebagian kasus akan salah. Tidak ada eval yang bisa memberi
-nilai penuh di sini, karena tidak ada kunci jawaban yang benar.
+Yang tidak hilang: baris "Apa itu Zendesk?" tetap tidak punya jawaban yang
+disepakati. Zendesk itu pesaing di domain yang sama — layak dijelaskan singkat,
+atau justru bukan urusan asisten internal? Keduanya bisa dibela. Begitu juga
+garis antara "Apa itu API?" (dijawab) dan "What is Python?" (ditolak): keduanya
+istilah teknis, dan yang memisahkan hanya penilaian bahwa satu dipakai dalam
+mengoperasikan produk SaaS dan satu lagi tidak.
 
-**Satu kasus yang tidak bisa saya selesaikan dengan aturan.** Mengulang
-pertanyaan yang sama dalam bahasa berbeda **tepat setelah** dijawab membuat
-manager membalas dengan pernyataan cakupan, bukan penjelasan. Tiga aturan umum
-dicoba dan semuanya gagal. Yang berhasil adalah menuliskan string harfiah
-`"what is sla"` ke dalam prompt — dan itu saya **buang**, karena mengistimewakan
-satu susunan kata tanpa alasan yang bisa dibela. Pertanyaan lain yang sama
-umumnya tidak dapat perlakuan itu.
+Yang bisa dilakukan hanyalah **mengukur di mana batasnya jatuh** dan menerima
+bahwa sebagian kasus akan salah. Tidak ada eval yang bisa memberi nilai penuh
+di sini, karena tidak ada kunci jawaban yang benar — nilai 34/34 berarti sistem
+ini konsisten dengan penafsiran saya, bukan bahwa penafsiran saya benar.
 
-Kasusnya sekarang ditandai `KNOWN_LIMITATION` di `scripts/repro.ts`: tetap
-dijalankan dan tetap terlihat, tapi tidak dihitung sebagai kegagalan. Kalau
-suatu saat lolos, itu justru layak diketahui.
+**Dua kasus yang tidak bisa saya selesaikan dengan aturan.**
 
-Menukar satu kasus uji yang lolos dengan prompt yang jujur adalah pertukaran
-yang saya pilih sadar.
+Yang pertama: mengulang pertanyaan yang sama dalam bahasa berbeda **tepat
+setelah** dijawab kadang membuat manager membalas dengan pernyataan cakupan,
+bukan penjelasan. Tiga aturan umum dicoba dan semuanya gagal. Yang berhasil
+adalah menuliskan string harfiah `"what is sla"` ke dalam prompt — dan itu saya
+**buang**, karena mengistimewakan satu susunan kata tanpa alasan yang bisa
+dibela.
+
+Catatan yang penting soal kasus ini: pada kode yang **persis sama**, kasus ini
+lolos dua kali dan gagal dua kali dari empat kali jalan. Jadi tidak ada susunan
+kata di prompt yang boleh diklaim "memperbaikinya" berdasarkan satu kali hijau.
+Tool-calling tidak sepenuhnya deterministik walaupun `temperature: 0`.
+
+Yang kedua, dan ini konsisten: setelah pertanyaan yang sama dijawab pada
+giliran **tepat sebelumnya**, manager membacanya sebagai permintaan yang lebih
+spesifik dan berbelok ke `search_docs`. Query dua hurufnya tidak melewati ambang
+kemiripan, dan pengguna mendapat "tidak ada di dokumen" untuk pertanyaan yang
+baru saja dijawab dengan benar. Tiga hal dicoba dan tidak ada yang menggeser:
+
+| Yang dicoba | Hasil |
+|---|---|
+| aturan "riwayat mengisi yang kosong, bukan mengubah cakupan" | tetap gagal |
+| aturan "mengulang bukan tanda jawaban sebelumnya kurang" | tetap gagal, dan merusak kasus pertama |
+| `HISTORY_TURNS` 4 → 2 | tetap gagal |
+
+Ini pertukaran yang saya pilih sadar. Versi lama menolak tiga topik dalam
+domain — API, webhook, reimbursement — dan **setiap** pengguna yang bertanya
+soal itu kena. Versi sekarang salah pada pengulangan keempat pertanyaan yang
+identik dalam satu percakapan, yang hampir tidak ada yang melakukannya.
+
+Ketiganya ditandai `KNOWN_LIMITATION` di `scripts/repro.ts`: tetap dijalankan
+dan tetap terlihat, tapi tidak dihitung sebagai kegagalan. Kalau suatu saat
+lolos, itu justru layak diketahui.
 
 ### Dokumen memakai kosakata penulisnya, bukan kosakata penanyanya
 
@@ -402,7 +498,7 @@ knowledge base yang baik" ditolak — padahal itu inti pekerjaan helpdesk. Yang
 dekat dengan contoh berhasil, yang satu langkah lebih jauh jatuh ke tier 3.
 Daftar contoh di tier 2 diperlebar supaya langkahnya lebih pendek.
 
-### Alat ukur meloloskan jawaban yang jelas salah — dua kali
+### Alat ukur meloloskan jawaban yang jelas salah — tiga kali
 
 Lebih mengganggu daripada bug-nya sendiri.
 
@@ -423,9 +519,30 @@ cakupan asisten lolos dari pengecekan kata kunci. Ambang panjang output
 ditambahkan di sana juga. Assertion berbasis kata kunci punya kelemahan yang
 sama di mana pun ia dipakai.
 
+Lalu terjadi untuk ketiga kalinya, dan ambang panjang output-lah yang kali ini
+kecolongan. Sepuluh soal batas yang baru diberi `min_output_tokens: 30`, dengan
+alasan penolakan itu pendek. Eval melaporkan 33/34. Tapi jawaban sebenarnya
+untuk "Apa itu API?" adalah:
+
+> Saya tidak dapat memberikan informasi tentang API. Namun, saya dapat membantu
+> dengan topik terkait dukungan seperti praktik helpdesk, tiket, dan metrik
+> kepuasan.
+
+Penolakan itu **34 token** — lewat ambang, jadi dihitung lulus. Tiga penolakan
+lolos begitu. Angka 30 saya tebak, tidak saya ukur; penolakan yang panjang
+sekalimat-dua lebih panjang dari yang saya bayangkan.
+
+Perbaikannya: ambang dinaikkan ke 40 **dan** ditambah `must_not_include` untuk
+pembuka penolakan (`saya tidak dapat`, `saya hanya`, `i can't`, `i cannot`).
+Skor "sebelum" yang benar setelah dikoreksi bukan 33/34, tapi **31/34** — dan
+angka itulah yang dipakai di tabel §2, dihitung ulang terhadap jawaban yang
+sudah tersimpan supaya tidak perlu memanggil API lagi.
+
 Pelajarannya sama seperti `k=1` di §3: setiap kali eval saya "lulus" padahal
 sistemnya rusak, penyebabnya assertion yang mengukur hal yang mudah diukur,
-bukan hal yang sebenarnya penting.
+bukan hal yang sebenarnya penting. Dan yang ketiga ini menambah satu lagi:
+**ambang yang ditebak adalah assertion yang mengukur tebakan saya**, bukan
+sistemnya.
 
 ### Pertanyaan perbandingan
 
@@ -490,21 +607,24 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   `k` sudah dicoba di dua ambang dan hasilnya lebih buruk; layak dicoba lagi
   sekarang setelah query retrieval berubah.
 
-  Catatan soal angkanya: harness melaporkan ini sebagai **precision@k 42%**, dan
+  Catatan soal angkanya: harness melaporkan ini sebagai **precision@k 36%**, dan
   angka itu terlihat lebih buruk dari kenyataannya. Kalau satu chunk yang benar
   dan lima yang dikirim, precision **tidak mungkin** melebihi 0,20 — itu
   aritmetika `k` yang dipatok, bukan mutu retrieval. Yang benar-benar layak
   dikejar adalah tokennya, bukan angka precision-nya.
 - **Riwayat dikirim mentah 4 pesan**, belum diringkas. Di percakapan panjang ini
-  akan boros. Angka 4 dipilih tanpa pengukuran.
+  akan boros. Angka 4 sekarang sudah diukur terhadap 2: keduanya lulus 34/34,
+  dan 2 lebih murah di percakapan panjang, tapi 2 pesan berarti satu tanya-jawab
+  tanpa sisa untuk pertanyaan susulan bertingkat. Yang belum diukur adalah
+  meringkas riwayat, bukan memotongnya.
 - **Ambang dikalibrasi dari 18 pertanyaan.** Sampel kecil. Query yang ditulis
   manager skornya lebih rendah daripada query yang saya tulis manual, sehingga
   ambang 0,49 yang terlihat aman di probe justru merusak sistem — pita amannya
   lebih sempit dari yang terlihat.
-- **"apa itu X" untuk topik yang terdokumentasi sering ditolak.** "berapa lama
-  cuti tahunan?" dijawab benar; "apa itu cuti?" ditolak di 4 dari 6 percobaan.
-  Tiga aturan prompt dicoba dan dilepas lagi karena ongkosnya ~115 token per
-  pertanyaan untuk sepertiga keberhasilan.
+- **Rute bisa bergeser kalau pertanyaan yang sama diulang berkali-kali dalam
+  satu percakapan.** Pengulangan keempat "what is sla" berbelok ke retrieval dan
+  menjawab "tidak ada di dokumen". Tiga perbaikan dicoba dan tidak ada yang
+  menggeser; angkanya di §4.
 - **Rate limit berbagi jatah dalam satu alamat.** Dihitung per alamat klien,
   15 per menit. Longgar untuk satu orang, tapi satu kantor di balik NAT berbagi
   angka itu, dan pemanggil terdistribusi sama sekali tidak tertahan. Ini
