@@ -162,6 +162,7 @@ textarea {
   color: var(--text-sidebar);
   cursor: pointer;
   flex-shrink: 0;
+  margin-right: 8px;
 }
 
 .collapse-btn:hover {
