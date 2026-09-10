@@ -20,6 +20,9 @@ next-env.d.ts
 
 # personal interview prep, not part of the project
 PREP.md
+# held back until reviewed — still present locally, just not published yet
+README.md
+docs/*.drawio
 
 # OS
 .DS_Store
