@@ -661,6 +661,11 @@ nav a svg {
 }
 
 /* Theme Toggle */
+.dark-only { display: none !important; }
+.dark .dark-only { display: inline-block !important; }
+.light-only { display: inline-block !important; }
+.dark .light-only { display: none !important; }
+
 .theme-toggle-wrap {
   display: flex;
   align-items: center;

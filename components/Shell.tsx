@@ -31,17 +31,9 @@ export default function Shell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
-      setIsDark(true);
-      document.documentElement.classList.add("dark");
-    }
-
     const savedSidebar = localStorage.getItem("sidebar_collapsed");
     if (savedSidebar === "true") {
       setIsCollapsed(true);
@@ -49,14 +41,13 @@ export default function Shell({
   }, []);
 
   const toggleTheme = () => {
-    if (isDark) {
+    const isCurrentlyDark = document.documentElement.classList.contains("dark");
+    if (isCurrentlyDark) {
       document.documentElement.classList.remove("dark");
       localStorage.setItem("theme", "light");
-      setIsDark(false);
     } else {
       document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");
-      setIsDark(true);
     }
   };
 
@@ -108,23 +99,18 @@ export default function Shell({
 
           <div className="theme-toggle-wrap">
             <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-              {isDark ? (
-                <i className="far fa-moon" style={{ fontSize: '18px' }}></i>
-              ) : (
-                <i className="far fa-sun" style={{ fontSize: '18px' }}></i>
-              )}
-              <span>{isDark ? "Dark mode" : "Light mode"}</span>
+              <i className="far fa-moon dark-only" style={{ fontSize: '18px' }}></i>
+              <i className="far fa-sun light-only" style={{ fontSize: '18px' }}></i>
+              <span className="dark-only">Dark mode</span>
+              <span className="light-only">Light mode</span>
             </div>
             <div className="toggle-switch" onClick={toggleTheme}>
               <div className="toggle-switch-handle" />
             </div>
           </div>
           <button onClick={toggleTheme} className="theme-icon-btn" aria-label="Toggle Theme">
-            {isDark ? (
-              <i className="far fa-moon" style={{ fontSize: '20px' }}></i>
-            ) : (
-              <i className="far fa-sun" style={{ fontSize: '20px' }}></i>
-            )}
+            <i className="far fa-moon dark-only" style={{ fontSize: '20px' }}></i>
+            <i className="far fa-sun light-only" style={{ fontSize: '20px' }}></i>
           </button>
 
           <div className="user-profile">
