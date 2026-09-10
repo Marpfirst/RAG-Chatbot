@@ -40,26 +40,36 @@ export default async function Documents() {
             <p className="hint">Korpus belum di-seed. Jalankan `npm run seed`.</p>
           )}
 
-          {docs.map((doc) => {
-            const own = chunks.filter((c) => c.doc === doc);
-            const docTokens = own.reduce((n, c) => n + c.token_count, 0);
-            return (
-              <section className="doc-card" key={doc}>
-                <h3>{TITLES[doc] ?? doc}</h3>
-                <p>
-                  {doc}.md · {own.length} bagian · {docTokens.toLocaleString("id-ID")} token
-                </p>
-                <ul>
-                  {own.map((c) => (
-                    <li key={c.id}>
-                      {c.section}
-                      <span>{c.token_count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+          {chunks.length > 0 && (
+            <div className="table-card">
+              <div className="scroll-x">
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>Dokumen</th>
+                      <th>Bagian</th>
+                      <th className="num">Tokens</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chunks.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <strong>{TITLES[c.doc] ?? c.doc}</strong>
+                          <br />
+                          <span style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4, display: "inline-block" }}>
+                            {c.doc}.md
+                          </span>
+                        </td>
+                        <td>{c.section}</td>
+                        <td className="num">{c.token_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {chunks.length > 0 && (
             <p className="hint" style={{ marginTop: 22 }}>
