@@ -16,6 +16,7 @@ P1 berarti layanan tidak bisa diakses oleh sebagian besar pelanggan.
 P2 berarti fitur penting terganggu tetapi layanan masih bisa dipakai, dan P3 berarti gangguan kecil tanpa dampak luas.
 
 ## Waktu Respons Insiden
+Sigap punya SLA waktu respons insiden sebagai berikut.
 Insiden P1 wajib direspons dalam 15 menit sejak alarm berbunyi.
 Insiden P2 wajib direspons dalam 60 menit, dan insiden P3 dalam 1 hari kerja.
 Waktu respons dihitung sampai ada orang yang mengambil alih penanganan, bukan sampai insiden selesai.

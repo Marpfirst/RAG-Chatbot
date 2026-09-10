@@ -59,6 +59,13 @@ async function main() {
       } else if (!explained) {
         verdict = "FAIL";
         failures++;
+      } else if (data.outputTokens < 40) {
+        // A deflection that happens to name "Service Level Agreements" while
+        // listing what the assistant covers satisfies the keyword check but is
+        // not an answer. Length separates the two: a real explanation runs to
+        // ~70 output tokens, a scope statement to about half that.
+        verdict = "FAIL";
+        failures++;
       }
     } else if (deflected && data.agent !== "manager") {
       verdict = "FAIL";

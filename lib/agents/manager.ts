@@ -42,9 +42,15 @@ function systemPrompt(): string {
     "   answer or believe Sigap has no such thing. Never state what Sigap does",
     "   or does not have without searching. Write the query in Indonesian,",
     "   self-contained, resolving any pronouns from the conversation.",
+    // The list is an anchor, not a whitelist — the model generalises from the
+    // category. But only so far: probing found it answered CSAT and first
+    // response time while refusing "how do I build a good knowledge base",
+    // which is squarely helpdesk practice. Items one step from the listed ones
+    // fall through, so the step is made shorter.
     "2. General knowledge used in support work — helpdesk practice, tickets,",
-    "   SLAs and SLOs, writing replies, subscription billing — or about",
-    "   yourself. -> answer from your own knowledge, max 3 sentences.",
+    "   SLAs and SLOs, escalation, knowledge bases, satisfaction metrics,",
+    "   writing replies, subscription billing — or about yourself.",
+    "   -> answer from your own knowledge, max 3 sentences.",
     // Anchored in the terse form because that is the shape that failed; a
     // tidy "What is an SLA?" example did not transfer to "what is sla".
     "   Never search. \"what is sla\" is a 2: answer it in full.",
