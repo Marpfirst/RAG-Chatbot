@@ -148,8 +148,12 @@ async function main() {
   const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
   const byCat = (cat: string) => rows.filter((r) => r.category === cat);
-  const recalls = rows.map((r) => r.recall).filter((v): v is number => v !== null);
-  const precisions = rows.map((r) => r.precision).filter((v): v is number => v !== null);
+  // An errored row carries no recall field at all, so filter on the type
+  // rather than on null — otherwise one transport error turns the whole
+  // retrieval score into NaN.
+  const isNum = (v: unknown): v is number => typeof v === "number" && !Number.isNaN(v);
+  const recalls = rows.map((r) => r.recall).filter(isNum);
+  const precisions = rows.map((r) => r.precision).filter(isNum);
 
   console.log("\n" + "-".repeat(62));
   console.log(`label            : ${label}`);

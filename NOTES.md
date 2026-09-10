@@ -56,26 +56,28 @@ sendiri, bukan sekadar dipercaya.
 | golden set diperbaiki (16 → 18 soal) | 467 | 16/18 | `k=1` langsung patah |
 | + specialist terima pertanyaan asli | 547 | 17/18 | |
 | + ambang kemiripan dikalibrasi | 540 | 16/18 | out-of-scope 599 → 441 |
-| + embed pertanyaan asli + query manager | **619** | **18/18** | konfigurasi final |
+| + embed pertanyaan asli + query manager | 619 | 18/18 | |
+| + konsistensi antar-giliran | **666** | **18/18** | konfigurasi final, lihat §4 |
 
-**2.654 → 619 token, turun 77%**, dengan 18/18 lulus.
+**2.654 → 666 token, turun 75%**, dengan 18/18 lulus.
 
 Per kategori:
 
 | Kategori | Naif | Final | Turun |
 |---|---|---|---|
-| Pertanyaan umum | 2.640 | 393 | 85% |
-| Butuh dokumen | 2.519 | 774 | 69% |
-| Perbandingan dua section | 2.636 | 772 | 71% |
-| Tidak ada di dokumen | 2.554 | 599 | 77% |
-| Permintaan di luar domain | 3.296 | 363 | 89% |
+| Pertanyaan umum | 2.640 | 440 | 83% |
+| Butuh dokumen | 2.519 | 822 | 67% |
+| Perbandingan dua section | 2.636 | 810 | 69% |
+| Pertanyaan susulan | 2.575 | 906 | 65% |
+| Tidak ada di dokumen | 2.554 | 647 | 75% |
+| Permintaan di luar domain | 3.296 | 418 | 87% |
 
 Yang paling berdampak, berurutan: **top-k retrieval** (mengirim ~250 token
 konteks, bukan 3.034), **pagar `max_tokens` plus penolakan di luar domain**
 (kasus terburuk turun dari 3.885 jadi ~370 token), lalu **memadatkan peta
 dokumen**.
 
-Perhatikan arah tabelnya: angka turun sampai 456, lalu **naik lagi** ke 619.
+Perhatikan arah tabelnya: angka turun sampai 456, lalu **naik lagi** ke 666.
 Kenaikan itu disengaja — setiap kenaikan membeli satu perbaikan kebenaran yang
 terukur. Konfigurasi termurah bukan yang terbaik.
 
@@ -147,6 +149,13 @@ perbandingan yang butuh dua chunk sekaligus, `k=1` langsung turun ke 89% recall.
 Golden set yang terlalu mudah lebih berbahaya daripada tidak punya golden set,
 karena memberi rasa aman yang keliru.
 
+**Titik buta kedua: semua soal diuji satu-satu.** Golden set mengirim tiap
+pertanyaan dalam percakapan baru, jadi tidak pernah menguji apa yang terjadi
+setelah beberapa giliran. Bug yang paling parah di proyek ini justru hanya
+muncul di sana, dan ditemukan lewat pemakaian manual, bukan oleh eval (§4).
+`scripts/repro.ts` sekarang memutar ulang satu percakapan delapan giliran dan
+memeriksa jawabannya tetap konsisten.
+
 **Variansi.** `temperature: 0` di OpenAI tidak sepenuhnya deterministik. Dua run
 pada konfigurasi identik memberi 512 dan 510 token dengan kegagalan yang sama,
 jadi cukup stabil. Tapi beberapa selisih kecil di iterasi awal kemungkinan derau
@@ -165,6 +174,34 @@ kebenaran setara atau lebih baik"**, bukan "0/18 menjadi 18/18".
 ---
 
 ## 4. Bagian yang paling bikin mentok
+
+### Manager meniru penolakannya sendiri
+
+Ditemukan saat mencoba aplikasinya dengan tangan, bukan oleh eval. Pertanyaan
+yang sama — "what is sla" — dijawab empat cara berbeda dalam satu percakapan:
+dijelaskan dengan benar, lalu ditolak sebagai di luar domain, lalu dilempar ke
+specialist yang menjawab "tidak ada di dokumen".
+
+Sebabnya: manager melihat empat pesan terakhir, **termasuk jawabannya sendiri**.
+Begitu dia menolak sekali, penolakan itu masuk riwayat dan berfungsi sebagai
+contoh yang dia tiru di giliran berikutnya. Percakapan jadi makin sempit seiring
+berjalan.
+
+Ada dua sebab tambahan yang menumpuk di atasnya: tingkat "umum tapi relevan"
+tidak punya contoh sama sekali di prompt, dan aturan pemecah seri saya —
+*"kalau ragu antara 1 dan 2, pilih 1"* — terlalu luas, mendorong pertanyaan yang
+jelas bukan soal Sigap ke retrieval.
+
+Perbaikannya: beri contoh konkret untuk tingkat 2, persempit aturan pemecah seri
+jadi "ragu apakah ini tentang **Sigap**", dan tambahkan satu kalimat bahwa
+giliran sebelumnya adalah konteks, bukan contoh yang harus ditiru. Versi pertama
+perbaikan ini memperbaiki perilakunya tapi menambah 147 token per pertanyaan
+(+24%); setelah dipadatkan tanpa mengubah perilaku, biayanya turun jadi 47 token.
+
+Pelajarannya bukan soal prompt. Eval yang menguji pertanyaan satu per satu tidak
+akan pernah menemukan bug ini, karena bug-nya hanya ada di percakapan.
+
+### Pertanyaan perbandingan
 
 Pertanyaan perbandingan: *"Bedanya paket Tumbuh sama paket Skala apa?"*
 
@@ -234,6 +271,10 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   yang pertama saya tambahkan.
 - **Tidak ada retry.** Kalau manager salah menormalkan pertanyaan, retrieval ikut
   salah dan tidak ada mekanisme perbaikan.
+- **Riwayat masih bisa menggeser perilaku.** Instruksi "giliran sebelumnya
+  adalah konteks, bukan contoh" memperbaiki kasus yang saya temukan, tapi itu
+  bujukan terhadap model, bukan jaminan. Percakapan yang lebih panjang atau
+  lebih aneh dari delapan giliran di `scripts/repro.ts` belum diuji.
 - **Kualitas bahasa jawaban tidak diukur**, hanya kebenaran faktanya. Assertion
   substring memastikan angkanya benar, bukan bahwa kalimatnya enak dibaca.
 - **Perbandingan korpus Inggris vs Indonesia tidak jadi diukur.** Jalurnya sudah

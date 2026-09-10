@@ -38,9 +38,19 @@ With the dev server running:
 npm run eval -- --label v1
 ```
 
-Runs `eval/golden.jsonl` (16 questions across five categories) and reports
+Runs `eval/golden.jsonl` (18 questions across six categories) and reports
 routing accuracy, recall@k, precision@k, and average tokens per category.
 Results are written to `eval/results/<label>.json`.
+
+The golden set asks each question in a fresh conversation, so it cannot catch
+behaviour that only drifts over several turns. `npx tsx scripts/repro.ts`
+covers that: it replays one eight-turn conversation and checks the answers stay
+consistent.
+
+`npx tsx scripts/smoke.ts` verifies a provider before you trust it — tool
+calling, the embeddings endpoint, and whether `usage` is reported honestly.
+`npx tsx scripts/probe.ts` prints the similarity distribution the threshold is
+calibrated against.
 
 To reproduce the naive baseline that the "before" numbers come from, set
 `NAIVE_MODE=true` and run the same command with a different label.
@@ -57,3 +67,6 @@ To reproduce the naive baseline that the "before" numbers come from, set
 | `eval/golden.jsonl` | the test set |
 | `scripts/seed.ts` | structure-aware chunking and embedding |
 | `scripts/eval.ts` | the measurement harness |
+| `scripts/repro.ts` | multi-turn consistency check |
+| `scripts/probe.ts` | similarity distribution, for threshold calibration |
+| `scripts/smoke.ts` | provider capability check |
