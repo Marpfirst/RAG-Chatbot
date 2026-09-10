@@ -245,7 +245,8 @@ two worst bugs in this project both lived exactly there.
 | `lib/retrieval.ts` | embed query, top-k vector search, similarity floor |
 | `docs/id/` | the corpus |
 | `docs/_gaps.md` | topics deliberately absent, plus the planted distractors |
-| `docs/flow.drawio` | flow diagrams |
+| `docs/flow.drawio` | flow diagrams — runtime, seeding, token accounting |
+| `docs/rag-flow.drawio` | the RAG pipeline in detail, and what re-indexing costs |
 | `eval/golden.jsonl` | the test set |
 | `eval/results/` | every measured run, including the naive baseline |
 | `scripts/seed.ts` | structure-aware chunking and embedding |
