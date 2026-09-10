@@ -9,9 +9,10 @@
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
     "eval": "tsx scripts/eval.ts",
-    "smoke": "tsx scripts/smoke.ts",
+    "repro": "tsx scripts/repro.ts",
     "probe": "tsx scripts/probe.ts",
-    "repro": "tsx scripts/repro.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "chunkscore": "tsx scripts/chunkscore.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
