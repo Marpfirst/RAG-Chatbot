@@ -1,0 +1,118 @@
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { chatClient, readUsage, type Usage } from "../llm";
+import { env } from "../env";
+import type { Turn } from "../history";
+import docmap from "../docmap.json";
+
+/**
+ * The routing rule lives here, and it costs nothing extra: the manager either
+ * answers or emits a tool call in its normal turn. A separate classification
+ * call would make every trivial question pay twice.
+ *
+ * Three tiers, not two. "General question" is deliberately NOT "anything a
+ * chatbot could answer" — an open-ended manager is a token hole. Tier 3 caps
+ * the worst case at a one-sentence refusal.
+ */
+function pickMap(): string {
+  // Default is "medium": doc names plus the first few section titles.
+  // Measured on the golden set — "full" (every section title) costs ~110 tokens
+  // more per question for no accuracy gain, and "compact" (names only) is
+  // cheaper still but strips the vocabulary the manager needs to turn a
+  // follow-up like "the bigger plan?" into a self-contained query.
+  switch (process.env.DOCMAP) {
+    case "compact":
+      return docmap.compact;
+    case "full":
+      return docmap.map;
+    default:
+      return docmap.medium;
+  }
+}
+
+function systemPrompt(): string {
+  return [
+    "You are the assistant for Sigap, an Indonesian helpdesk SaaS.",
+    "",
+    "Documents you can search:",
+    pickMap(),
+    "",
+    "Decide per message:",
+    "1. About Sigap itself (product, pricing, employee policy, operations)",
+    "   -> ALWAYS call search_docs, even if you believe you already know the",
+    "   answer or believe Sigap has no such thing. Never state what Sigap does",
+    "   or does not have without searching. Write the query in Indonesian,",
+    "   self-contained, resolving any pronouns from the conversation.",
+    "2. General question about helpdesk, customer support, or SaaS work",
+    "   -> answer directly, 3 sentences max.",
+    "3. Anything else (essays, code, creative writing, unrelated topics)",
+    "   -> refuse in one sentence and state what you cover.",
+    "",
+    "If unsure between 1 and 2, choose 1.",
+    "Reply in the user's language. Be brief.",
+  ].join("\n");
+}
+
+const searchTool = {
+  type: "function" as const,
+  function: {
+    name: "search_docs",
+    description: "Search Sigap's internal documents.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Indonesian search query" },
+      },
+      required: ["query"],
+      additionalProperties: false,
+    },
+  },
+};
+
+export type ManagerResult =
+  | { kind: "answer"; text: string; usage: Usage; model: string; latency: number }
+  | { kind: "delegate"; query: string; usage: Usage; model: string; latency: number };
+
+export async function runManager(
+  question: string,
+  history: Turn[]
+): Promise<ManagerResult> {
+  const model = env.modelManager();
+  const messages: ChatCompletionMessageParam[] = [
+    { role: "system", content: systemPrompt() },
+    ...history.map((t) => ({ role: t.role, content: t.content }) as ChatCompletionMessageParam),
+    { role: "user", content: question },
+  ];
+
+  const started = Date.now();
+  const res = await chatClient().chat.completions.create({
+    model,
+    messages,
+    tools: [searchTool],
+    max_tokens: env.maxTokensManager(),
+    temperature: 0,
+  });
+  const latency = Date.now() - started;
+
+  const usage = readUsage(res.usage);
+  const choice = res.choices[0].message;
+  const call = choice.tool_calls?.[0];
+
+  if (call && call.type === "function") {
+    let query = question;
+    try {
+      query = JSON.parse(call.function.arguments).query || question;
+    } catch {
+      // Malformed tool arguments: fall back to the raw question rather than
+      // spending another call asking the model to try again.
+    }
+    return { kind: "delegate", query, usage, model, latency };
+  }
+
+  return {
+    kind: "answer",
+    text: choice.content?.trim() || "Maaf, saya belum bisa menjawab itu.",
+    usage,
+    model,
+    latency,
+  };
+}
