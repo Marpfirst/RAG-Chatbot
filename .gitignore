@@ -7,4 +7,3 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
-eval/results/
