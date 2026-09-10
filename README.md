@@ -7,7 +7,6 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Tokens](https://img.shields.io/badge/tokens%2Fquestion-674-informational)
 ![Golden set](https://img.shields.io/badge/golden%20set-24%2F24-brightgreen)
 
@@ -260,14 +259,28 @@ two worst bugs in this project both lived exactly there.
 
 Stated here rather than left to be discovered:
 
-- **precision@k is 42%.** `k=5` is kept for comparison questions; `k=3` is 9%
-  cheaper and passes 17/18. Correctness was chosen, and the waste is known.
-- **Rate limiting is per conversation**, so a client that never sends a
-  `conversationId` bypasses it.
-- **Conversation history lives in one browser tab.** The data is all in the
-  database; only the UI for listing past conversations is missing.
-- **Vector search only.** Exact identifiers — plan names, `rel-*` tags — can be
-  missed. At 38 chunks it has not mattered yet.
+- **About 340 tokens per document question are wasted.** `k` is fixed at 5, but
+  most questions are answered by one section, so four of the five chunks are
+  padding. `k=5` is kept because comparison questions genuinely need two, and
+  `k=3` broke follow-ups when measured. Adaptive `k` was tried at two thresholds
+  and made things worse; it is worth another attempt now that the retrieval
+  query has changed.
+
+  This is the honest form of a number the harness reports as *"precision@k
+  42%"*. That figure looks worse than it is: when one chunk is correct and five
+  are sent, precision **cannot** exceed 0.20 — it is arithmetic, not quality.
+  The tokens are the real cost.
+- **Rate limiting is per conversation**, so a client that simply omits
+  `conversationId` bypasses it entirely. Written when this only ran locally.
+  For a public deployment on a fixed API budget, it should count by IP too.
+- **Conversation history lives in one browser tab.** A recent-chats list was
+  built and then deliberately removed: it served none of the project's stated
+  requirements, and a schema migration close to a deadline was not a trade worth
+  making. Every conversation is still in the database — only the UI is missing.
+- **Vector search only.** Exact identifiers — plan names, `rel-*` tags — could
+  be missed where a keyword index would not miss them. Left alone on purpose:
+  recall@k is 100% across the golden set, so there is no measured problem to
+  fix. It becomes one on a larger corpus.
 
 The full list, with the measurement behind each, is in [NOTES.md](NOTES.md).
 
@@ -297,7 +310,3 @@ Chunking approach informed by Meilisearch's
 — whose 10–20% overlap advice was measured and deliberately not followed.
 
 ---
-
-## 📜 License
-
-[MIT](LICENSE)

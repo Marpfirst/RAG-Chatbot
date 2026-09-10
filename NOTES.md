@@ -323,9 +323,18 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
 
 ## 6. Yang saya tahu masih kurang
 
-- **Precision@k hanya 42%.** Dari 5 chunk yang dikirim, biasanya 2 yang relevan.
-  `k=5` dipertahankan demi pertanyaan perbandingan; `k=3` hemat 9% dan lulus
-  17/18. Saya pilih kebenaran, tapi ini pemborosan yang saya sadari.
+- **Sekitar 340 token terbuang di tiap pertanyaan dokumen.** `k` dipatok 5,
+  padahal sebagian besar pertanyaan terjawab oleh satu section — empat chunk
+  sisanya jadi bantalan. `k=5` dipertahankan karena pertanyaan perbandingan
+  memang butuh dua, dan `k=3` merusak pertanyaan susulan saat diukur. Adaptive
+  `k` sudah dicoba di dua ambang dan hasilnya lebih buruk; layak dicoba lagi
+  sekarang setelah query retrieval berubah.
+
+  Catatan soal angkanya: harness melaporkan ini sebagai **precision@k 42%**, dan
+  angka itu terlihat lebih buruk dari kenyataannya. Kalau satu chunk yang benar
+  dan lima yang dikirim, precision **tidak mungkin** melebihi 0,20 — itu
+  aritmetika `k` yang dipatok, bukan mutu retrieval. Yang benar-benar layak
+  dikejar adalah tokennya, bukan angka precision-nya.
 - **Riwayat dikirim mentah 4 pesan**, belum diringkas. Di percakapan panjang ini
   akan boros. Angka 4 dipilih tanpa pengukuran.
 - **Ambang dikalibrasi dari 18 pertanyaan.** Sampel kecil. Query yang ditulis
