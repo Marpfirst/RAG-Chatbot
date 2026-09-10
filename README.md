@@ -308,6 +308,13 @@ Stated here rather than left to be discovered:
   the route.** The fourth *"what is sla"* in a row turns into a document search
   and comes back "not in the documents", after three correct answers. Three
   fixes were tried and measured; none moved it.
+- **Every dynamic page render used to cross the Pacific twice.** The Supabase
+  project runs in Singapore, and Vercel's default function region is `iad1`
+  (Washington DC), so a request from Jakarta went edge Singapore -> function US
+  East -> database Singapore and back. The query itself takes 40-80 ms; the
+  measured page render was 683 ms. `vercel.json` now pins the function to
+  `sin1`. Worth re-measuring on any redeploy: `curl -sI <url>/history` and read
+  `X-Vercel-Id`, which names the edge and the execution region.
 - **Rate limiting shares a budget across one address.** Requests are counted per
   client address, 15 a minute — generous for a person, but an office behind one
   NAT shares that allowance, and a distributed caller is not stopped at all. It

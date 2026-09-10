@@ -643,6 +643,21 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   satu percakapan.** Pengulangan keempat "what is sla" berbelok ke retrieval dan
   menjawab "tidak ada di dokumen". Tiga perbaikan dicoba dan tidak ada yang
   menggeser; angkanya di §4.
+- **Setiap render halaman dinamis sempat menyeberangi Pasifik dua kali.** Ini
+  ditemukan saat mengejar "kenapa pindah tab lama", dan tebakan awalnya salah
+  dua kali: dikira `force-dynamic`, lalu dikira query Supabase-nya lambat.
+  Diukur: query Supabase 40-80 ms, halaman dev yang sudah hangat 94-100 ms —
+  jadi bukan keduanya. Yang lambat cuma di produksi, dan angkanya 683 ms.
+
+  Penyebabnya ada di satu header: `X-Vercel-Id: sin1::iad1::...`. Request masuk
+  lewat edge Singapura, tapi **function-nya jalan di `iad1`, Washington DC**,
+  sementara database Supabase-nya di Singapura (`cf-ray: ...-SIN`). Jadi tiap
+  render: Jakarta -> Singapura -> Washington -> Singapura -> Washington ->
+  Singapura. Query-nya cepat; jaraknya yang mahal.
+
+  `vercel.json` sekarang mematok region ke `sin1`. Pelajarannya sama seperti
+  bug cache dulu: yang kelihatan seperti "database lambat" ternyata bukan
+  database sama sekali, dan yang menemukannya adalah satu header, bukan tebakan.
 - **Rate limit berbagi jatah dalam satu alamat.** Dihitung per alamat klien,
   15 per menit. Longgar untuk satu orang, tapi satu kantor di balik NAT berbagi
   angka itu, dan pemanggil terdistribusi sama sekali tidak tertahan. Ini
