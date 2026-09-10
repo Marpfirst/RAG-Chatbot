@@ -57,9 +57,16 @@ sendiri, bukan sekadar dipercaya.
 | + specialist terima pertanyaan asli | 547 | 17/18 | |
 | + ambang kemiripan dikalibrasi | 540 | 16/18 | out-of-scope 599 → 441 |
 | + embed pertanyaan asli + query manager | 619 | 18/18 | |
-| + konsistensi antar-giliran | **666** | **18/18** | konfigurasi final, lihat §4 |
+| + konsistensi antar-giliran | 666 | 18/18 | lihat §4 |
+| + batas di luar domain diperketat | **+70/pertanyaan** | **24/24** | golden set 18 → 24 soal, lihat §4 |
 
-**2.654 → 666 token, turun 75%**, dengan 18/18 lulus.
+**2.654 → 666 token, turun 75%**, dengan 18/18 lulus pada golden set 18 soal.
+
+Setelah itu golden set diperluas jadi 24 soal dan batas "di luar domain"
+diperketat (§4). Angka totalnya jadi 675, tapi **itu bukan perbandingan yang
+sah** — komposisi soalnya berubah. Yang sebanding adalah kenaikan per kategori:
+**+70 token per pertanyaan**, sekitar 10%. Itu harga yang dibayar untuk menutup
+lima kelas pertanyaan yang sebelumnya lolos.
 
 Per kategori:
 
@@ -122,10 +129,14 @@ terukur. Konfigurasi termurah bukan yang terbaik.
 
 ## 3. Bagaimana memastikan jawabannya masih benar
 
-`eval/golden.jsonl` — 18 pertanyaan, enam kategori: umum, butuh dokumen,
+`eval/golden.jsonl` — 24 pertanyaan, enam kategori: umum, butuh dokumen,
 perbandingan dua section, tidak ada di dokumen, permintaan di luar domain, dan
-pertanyaan susulan yang bergantung pada riwayat. Dua di antaranya berbahasa
-Inggris.
+pertanyaan susulan yang bergantung pada riwayat. Beberapa berbahasa Inggris.
+
+Tujuh dari 24 menguji batas "di luar domain", termasuk yang berdekatan dan
+mudah tertukar: pemrograman, matematika, terjemahan, pengetahuan umum. Enam di
+antaranya ditambahkan setelah Python lolos (§4) — wilayah yang tidak diuji
+adalah wilayah yang bocor.
 
 Pengukurannya tiga lapis, supaya regresi bisa dilacak ke lapisan penyebabnya:
 
@@ -135,6 +146,11 @@ Pengukurannya tiga lapis, supaya regresi bisa dilacak ke lapisan penyebabnya:
 
 Penilaian pakai substring, bukan LLM judge. Membakar token untuk menilai tugas
 hemat token itu kontradiktif, dan semua fakta di korpus berupa angka atau nama.
+
+Ditambah dua assertion yang tidak berbasis kata: `max_output_tokens` untuk
+memastikan permintaan di luar domain ditolak singkat, dan `min_output_tokens`
+untuk memastikan pertanyaan yang seharusnya dijawab benar-benar dapat jawaban —
+bukan penolakan, dan bukan kutipan instruksi sistem (§4).
 
 Korpusnya perusahaan fiktif. Itu disengaja: model tidak mungkin tahu harga paket
 Tumbuh dari pelatihannya, jadi jawaban yang benar membuktikan retrieval bekerja,
@@ -200,6 +216,56 @@ perbaikan ini memperbaiki perilakunya tapi menambah 147 token per pertanyaan
 
 Pelajarannya bukan soal prompt. Eval yang menguji pertanyaan satu per satu tidak
 akan pernah menemukan bug ini, karena bug-nya hanya ada di percakapan.
+
+### Batas "di luar domain" bocor, dan perbaikannya membuka bug lain
+
+"What is Python?" dijawab manager. Ditemukan Alvin dengan mencoba sendiri,
+bukan oleh eval — sama seperti temuan sebelumnya.
+
+Dua sebab. Pertama, tier 2 berbunyi "Support/SaaS general knowledge", dan kata
+"SaaS" membuat model membaca apa pun yang berbau perangkat lunak sebagai
+relevan. Kedua — dan ini yang penting — **perbaikan bug konsistensi di atas yang
+membukanya.** Baris "kalau ragu, pilih 2 daripada 3" ditambahkan untuk
+menghentikan manager menolak "what is sla"; efek sampingnya, setiap kasus batas
+jadi condong ke arah menjawab.
+
+Dua bug itu menarik ke arah berlawanan. Memperketat satu sisi membangkitkan
+sisi lain, dan itu terjadi tiga kali berturut-turut:
+
+1. Tier 3 diperketat + pemecah seri dibalik → Python tertutup, tapi
+   "what is a helpdesk ticket" dan "beda SLA dan SLO" ikut ditolak
+2. Pemecah seri ditulis ulang sebagai pertanyaan ("ask: is this about doing
+   support work?") → model **mengucapkan kalimat itu ke user** sebagai jawaban
+3. Pemecah seri dibuang, diganti contoh konkret di tier 2 → hampir benar, tapi
+   "what is sla" huruf kecil masih ditolak tepat setelah versi kapitalnya
+   dijawab
+
+Yang akhirnya menutupnya: **menulis contoh jangkar dalam bentuk yang persis
+gagal.** Contoh rapi `"What is an SLA?"` tidak menular ke `"what is sla"`.
+Setelah jangkarnya ditulis huruf kecil, delapan giliran berturut-turut konsisten.
+
+Biayanya +70 token per pertanyaan (~10%), menutup lima kelas yang sebelumnya
+lolos: pemrograman, matematika, terjemahan, pengetahuan umum, dan penulisan
+kreatif.
+
+### Alat ukur meloloskan jawaban yang jelas salah — dua kali
+
+Lebih mengganggu daripada bug-nya sendiri.
+
+Saat tier 2 ikut tertolak, eval tetap **lulus** kasus itu, karena assertion-nya
+hanya memeriksa rute — dan penolakan juga dijawab manager. Saya tambahkan
+`must_not_include` untuk kata penolakan; eval lulus lagi, kali ini pada jawaban
+yang isinya kalimat instruksi saya sendiri, karena kalimat itu tidak memuat kata
+penolakan mana pun.
+
+Assertion berbasis kata kunci hanya menjaga bentuk kegagalan yang sudah
+terbayangkan. Yang akhirnya menangkap keduanya jauh lebih bodoh: **panjang
+output minimum**. Penolakan pendek, kutipan instruksi pendek, jawaban sungguhan
+tidak. `min_output_tokens: 35` pada soal tier 2 menangkap dua-duanya sekaligus.
+
+Pelajarannya sama seperti `k=1` di §3: setiap kali eval saya "lulus" padahal
+sistemnya rusak, penyebabnya assertion yang mengukur hal yang mudah diukur,
+bukan hal yang sebenarnya penting.
 
 ### Pertanyaan perbandingan
 

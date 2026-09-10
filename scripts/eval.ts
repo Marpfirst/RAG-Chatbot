@@ -33,6 +33,7 @@ type Case = {
   must_include?: string[];
   must_not_include?: string[];
   max_output_tokens?: number;
+  min_output_tokens?: number;
   context?: string[];
 };
 
@@ -115,6 +116,12 @@ async function main() {
 
     if (c.max_output_tokens && reply.outputTokens > c.max_output_tokens)
       failures.push(`output=${reply.outputTokens}>${c.max_output_tokens}`);
+
+    // Guards against an answer that is technically on-route but empty of
+    // content — a refusal, or the model reciting its own instructions. Both
+    // slipped past assertions that only checked routing and keywords.
+    if (c.min_output_tokens && reply.outputTokens < c.min_output_tokens)
+      failures.push(`output=${reply.outputTokens}<${c.min_output_tokens}`);
 
     const expected = c.expected_chunk_ids ?? [];
     const retrieved = reply.retrieved ?? [];
