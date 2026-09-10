@@ -32,3 +32,8 @@
 {"id": "b08", "question": "WHAT IS SLA", "lang": "en", "category": "boundary", "expected_route": "manager", "min_output_tokens": 40, "must_include": ["service level"], "must_not_include": ["i can't", "i cannot", "saya hanya", "saya tidak dapat"]}
 {"id": "b09", "question": "wHaT iS sLa", "lang": "en", "category": "boundary", "expected_route": "manager", "min_output_tokens": 40, "must_include": ["service level"], "must_not_include": ["i can't", "i cannot", "saya hanya", "saya tidak dapat"]}
 {"id": "b10", "question": "Kalau yang sakit?", "lang": "id", "category": "followup", "expected_route": "specialist", "context": ["Berapa jatah cuti tahunan karyawan Sigap?"], "expected_chunk_ids": ["employee-policy#cuti-sakit"], "must_include": ["12"]}
+{"id": "s01", "question": "apa itu python", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["bahasa pemrograman", "programming language", "tingkat tinggi"]}
+{"id": "s02", "question": "Apa itu Python?", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["bahasa pemrograman", "programming language", "tingkat tinggi"]}
+{"id": "s03", "question": "apa itu javascript", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["bahasa pemrograman", "programming language"]}
+{"id": "s04", "question": "apa itu html", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["markup", "hypertext"]}
+{"id": "s05", "question": "apa itu next js", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["framework", "react"]}

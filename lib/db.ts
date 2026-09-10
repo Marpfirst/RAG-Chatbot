@@ -24,7 +24,7 @@ export function db() {
        * Supabase on all five of five requests — supabase-js builds its own
        * request, and Next's patched `fetch` would not take it.
        */
-      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      fetch: (input, init) => fetch(input, { ...init, cache: "default" }),
     },
   });
 }
