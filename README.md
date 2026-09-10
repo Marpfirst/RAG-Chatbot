@@ -4,11 +4,11 @@
 
 **Two agents. One chat column. Every token accounted for.**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
-![Tokens](https://img.shields.io/badge/tokens%2Fquestion-843-informational)
-![Golden set](https://img.shields.io/badge/golden%20set-40%2F42-brightgreen)
+[![Built with Next.js 14](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![Written in TypeScript 5](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Supabase with pgvector](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+![843 tokens per question](https://img.shields.io/badge/tokens%2Fquestion-843-informational)
+![Golden set: 40 of 42 passing](https://img.shields.io/badge/golden%20set-40%2F42-brightgreen)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **[Live demo](https://rag-chatbot-marp.vercel.app)** ·
