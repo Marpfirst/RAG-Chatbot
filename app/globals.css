@@ -98,12 +98,11 @@ textarea {
 }
 
 .sidebar {
-  background: var(--bg-sidebar);
   padding: 32px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  overflow: hidden;
+  gap: 16px;
+  background-color: var(--bg-sidebar);
   position: relative;
 }
 
@@ -116,7 +115,7 @@ textarea {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -1012,7 +1011,7 @@ table.data th.num {
     z-index: 40;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
-    gap: 24px;
+    gap: 16px;
   }
   /* Force sidebar to expanded state on mobile regardless of is-collapsed */
   .shell.is-collapsed .sidebar { padding: 32px 24px 24px; align-items: stretch; }
@@ -1195,4 +1194,117 @@ table.data tbody tr.row-flash > td {
 
 table.data tbody tr > td {
   transition: background 0.9s ease;
+}
+
+/* ---------------------------------------------------------- doc rows */
+
+.doc-row {
+  cursor: pointer;
+}
+
+.doc-row:hover > td {
+  background: rgba(127, 127, 127, 0.05);
+}
+
+.doc-row:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: -2px;
+}
+
+.doc-name {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.doc-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bubble-user);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  flex: none;
+}
+
+.doc-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.5;
+}
+
+.doc-name strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.doc-name span {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.doc-section {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--bubble-user);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.doc-row .chev {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.doc-row[data-open="true"] .chev {
+  transform: rotate(180deg);
+}
+
+.doc-detail > td {
+  padding: 0 16px 20px;
+  background: rgba(127, 127, 127, 0.04);
+  white-space: normal;
+}
+
+.doc-detail p {
+  margin: 0;
+  max-width: 70ch;
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-main);
+}
+
+.doc-detail footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.doc-detail code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--bubble-user);
+  color: var(--text-main);
 }
