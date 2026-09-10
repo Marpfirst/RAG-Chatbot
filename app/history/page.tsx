@@ -1,4 +1,5 @@
 import Shell from "@/components/Shell";
+import LocalTime from "@/components/LocalTime";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -67,12 +68,7 @@ export default async function History() {
                       <tr key={r.message_id}>
                         <td>
                           <span style={{color: 'var(--text-muted)'}}>
-                          {new Date(r.created_at).toLocaleString("en-US", {
-                            day: "2-digit",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                            <LocalTime iso={r.created_at} />
                           </span>
                         </td>
                         <td>
