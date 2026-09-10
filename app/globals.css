@@ -471,6 +471,40 @@ nav a svg {
   line-height: 1.6;
 }
 
+/* The models emit Markdown of their own accord for multi-part answers, and
+   components/AnswerText.tsx renders it. Paragraphs after the first need a gap;
+   the first must not, or every plain answer gains a stray top margin. */
+.answer p + p,
+.answer p + ol,
+.answer p + ul,
+.answer ol + p,
+.answer ul + p {
+  margin-top: 10px;
+}
+
+.answer ol,
+.answer ul {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.answer li + li {
+  margin-top: 6px;
+}
+
+/* A nested list is the detail under a numbered step: tighter, and closer to
+   the line it belongs to. */
+.answer li > ul {
+  margin-top: 4px;
+  padding-left: 18px;
+}
+
+.answer li > ul > li + li {
+  margin-top: 2px;
+}
+
 .source-chip {
   display: flex;
   align-items: center;
@@ -1216,6 +1250,71 @@ table.data tbody tr.row-flash > td {
 
 table.data tbody tr > td {
   transition: background 0.9s ease;
+}
+
+/* -------------------------------------------------- document groups */
+
+.doc-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.doc-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.doc-group-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-main);
+  font: inherit;
+}
+
+.doc-group-head:hover {
+  background: var(--surface-hover, rgba(127, 127, 127, 0.06));
+}
+
+.doc-group-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-group-name strong {
+  font-size: 15px;
+}
+
+.doc-group-name span {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.doc-group-head .chev {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  transition: transform 0.18s ease;
+}
+
+.doc-group-head[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+
+.doc-group-body {
+  border-top: 1px solid var(--border);
 }
 
 /* ---------------------------------------------------------- doc rows */

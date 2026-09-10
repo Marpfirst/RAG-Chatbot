@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { refreshHistory } from "./actions";
 import Link from "next/link";
+import AnswerText from "@/components/AnswerText";
 
 type Breakdown = {
   agent: "manager" | "specialist";
@@ -358,7 +359,7 @@ export default function Page() {
                         }}
                       >
                         {t.agent && <div className="who" style={{textTransform: 'capitalize'}}>{t.agent}</div>}
-                        <p>{t.text}</p>
+                        <AnswerText text={t.text} />
 
                         {t.sources && t.sources.length > 0 && (
                           <div className="source-chip" style={{justifyContent: 'space-between', width: '100%', maxWidth: 420}}>
