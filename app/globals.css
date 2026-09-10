@@ -87,27 +87,30 @@ textarea {
 /* ---------------------------------------------------------------- shell */
 
 .shell {
-  display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
+  display: flex;
   height: 100dvh;
-  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shell.is-collapsed {
-  grid-template-columns: 72px minmax(0, 1fr);
+  /* width lives on .sidebar; see the rule below */
 }
 
 .sidebar {
+  flex: 0 0 290px;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   background-color: var(--bg-sidebar);
+  overflow-x: hidden;
+  transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shell.is-collapsed .sidebar {
+  flex-basis: 72px;
   padding: 24px 14px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .sidebar-header {
@@ -130,9 +133,6 @@ textarea {
   white-space: nowrap;
 }
 
-.shell.is-collapsed .brand {
-  display: none;
-}
 
 .brand h1 {
   margin: 0;
@@ -208,9 +208,6 @@ nav a {
   justify-content: center;
 }
 
-.shell.is-collapsed nav a span {
-  display: none;
-}
 
 nav a:hover {
   background: rgba(255, 255, 255, 0.05);
@@ -249,9 +246,6 @@ nav a svg {
   white-space: nowrap;
 }
 
-.shell.is-collapsed .session {
-  display: none;
-}
 
 .session dt {
   color: var(--text-sidebar-brand);
@@ -296,14 +290,11 @@ nav a svg {
 }
 
 .shell.is-collapsed .user-profile {
-  justify-content: center;
+  justify-content: flex-start;
   padding: 16px 0 0;
   width: 100%;
 }
 
-.shell.is-collapsed .user-profile .user-info {
-  display: none;
-}
 
 .user-avatar {
   width: 40px;
@@ -332,12 +323,12 @@ nav a svg {
 /* ---------------------------------------------------------------- main */
 
 .main-area {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  background: var(--bg-main);
 }
 
 .main {
@@ -674,9 +665,6 @@ nav a svg {
   white-space: nowrap;
 }
 
-.shell.is-collapsed .theme-toggle-wrap {
-  display: none;
-}
 
 /* Only show icon in collapsed mode */
 .theme-icon-btn {
@@ -1338,18 +1326,18 @@ table.data tbody tr.doc-detail > td {
 
 .shell.is-collapsed .sidebar-header {
   width: 100%;
-  justify-content: center;
+  justify-content: flex-start;
   padding-bottom: 20px;
 }
 
 .shell.is-collapsed nav {
   width: 100%;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .shell.is-collapsed .sidebar-footer {
   width: 100%;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
@@ -1366,4 +1354,70 @@ table.data tbody tr.doc-detail > td {
 nav a i {
   width: 20px;
   text-align: center;
+}
+
+/* ------------------------------------------------- collapse animation */
+
+/*
+ * Labels shrink to nothing rather than disappearing.
+ *
+ * `display: none` cannot be animated, so the old version popped: the rail slid
+ * shut while the text vanished on frame one. Animating max-width lets the text
+ * be squeezed out by the closing rail, which is the motion being described.
+ * Opacity leads slightly on the way out and lags on the way back in, so text
+ * is never legible at a width too narrow to hold it.
+ */
+.brand,
+nav a span,
+.user-info,
+.session,
+.theme-toggle-wrap {
+  overflow: hidden;
+  transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease 0.1s;
+}
+
+.brand,
+nav a span,
+.user-info {
+  max-width: 220px;
+  opacity: 1;
+}
+
+.session,
+.theme-toggle-wrap {
+  max-height: 200px;
+  opacity: 1;
+}
+
+.shell.is-collapsed .brand,
+.shell.is-collapsed nav a span,
+.shell.is-collapsed .user-info {
+  max-width: 0;
+  opacity: 0;
+  transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.12s ease;
+}
+
+.shell.is-collapsed .session,
+.shell.is-collapsed .theme-toggle-wrap {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  margin: 0;
+  border-top-width: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.12s ease,
+              padding-top 0.3s ease;
+}
+
+/* The icon-only theme button fades in behind the row it replaces. */
+.theme-icon-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.shell.is-collapsed .theme-icon-btn {
+  opacity: 1;
+  transition: opacity 0.2s ease 0.15s;
 }
