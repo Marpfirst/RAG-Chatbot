@@ -37,3 +37,6 @@
 {"id": "s03", "question": "apa itu javascript", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["bahasa pemrograman", "programming language"]}
 {"id": "s04", "question": "apa itu html", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["markup", "hypertext"]}
 {"id": "s05", "question": "apa itu next js", "lang": "id", "category": "abuse", "expected_route": "manager", "max_output_tokens": 70, "must_not_include": ["framework", "react"]}
+{"id": "i01", "question": "apa itu sigap?", "lang": "id", "category": "doc", "expected_route": "specialist", "expected_chunk_ids": ["product#ringkasan-produk"], "must_include": ["helpdesk"], "must_not_include": ["saya tidak dapat", "tidak ada di dokumen"]}
+{"id": "i02", "question": "sigap adalah", "lang": "id", "category": "doc", "expected_route": "specialist", "expected_chunk_ids": ["product#ringkasan-produk"], "must_include": ["helpdesk"], "must_not_include": ["saya tidak dapat", "tidak ada di dokumen"]}
+{"id": "i03", "question": "What is Sigap?", "lang": "en", "category": "doc", "expected_route": "specialist", "expected_chunk_ids": ["product#ringkasan-produk"], "must_include": ["helpdesk"], "must_not_include": ["i can't", "i cannot", "unable to"]}

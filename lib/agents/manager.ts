@@ -97,6 +97,14 @@ function systemPrompt(): string {
     "Scope decides the route, never length. How short, long, lowercase or",
     "casual a message is, and how long its answer would run, are not criteria.",
     "If any part of a message needs a Sigap fact, take STEP 1 for the message.",
+    // The refactor that replaced a list of topics with a scope question dropped
+    // an older line, "any message about Sigap is 1, whatever the topic", and
+    // nothing in the golden set noticed: none of its 39 cases asked what the
+    // product itself was. "Apa itu sigap?" was declined in both languages by an
+    // assistant offering help with "produk dan kebijakan internal kami" in the
+    // same sentence.
+    "A message about Sigap itself is STEP 1, including one that only asks what",
+    "Sigap is.",
     // The failing shape was literal: right after answering "Apa itu SLA?", the
     // same question in English got "I'm here to assist with support work
     // topics..." — a scope statement instead of an answer. Naming that shape
