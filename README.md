@@ -11,8 +11,7 @@
 ![Golden set](https://img.shields.io/badge/golden%20set-40%2F42-brightgreen)
 
 **[Live demo](https://rag-chatbot-marp.vercel.app)** ·
-[Repository](https://github.com/Marpfirst/RAG-Chatbot) ·
-[Engineering notes](NOTES.md)
+[Repository](https://github.com/Marpfirst/RAG-Chatbot)
 
 </div>
 
@@ -84,7 +83,22 @@ out-of-domain, and history-dependent follow-ups.
 | recall@k | **100%** |
 | Naive baseline (historical, 18-question set) | 2,654 tokens |
 
-Two known failures are documented rather than patched — see [NOTES.md](NOTES.md).
+The two failures are known and left unpatched rather than hidden:
+
+- **"Apa itu reimbursement?"** can be declined. The term reads either as a
+  general concept or as a request for the company's reimbursement policy, and
+  the assignment does not define that boundary — so there is no answer key to
+  claim. Adding a question-specific exception would make the router more
+  brittle, which this project has already demonstrated once.
+- **"wHaT iS sLa"** is declined while "WHAT IS SLA" is answered. Capitalisation
+  is stated in the prompt as not being a routing criterion, and it does not hold
+  for that alternating form.
+
+`eval/results/` keeps three runs on purpose: the naive starting point, the final
+result, and one rejected optimisation — prompt compression reached 694 tokens
+but scored 32/34, which is why it was reverted. The engineering decisions behind
+these numbers are written up in a separate one-page note, delivered alongside
+this repository.
 
 ```bash
 npm run eval     # the 42-question golden set

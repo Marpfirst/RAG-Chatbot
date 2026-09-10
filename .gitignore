@@ -28,5 +28,4 @@ docs/*.drawio
 .DS_Store
 Thumbs.db
 !README.md
-!NOTES.md
 node_modules
