@@ -73,9 +73,21 @@ instant, and `ivfflat` needs far more rows before its lists mean anything.
 
 | Setting | Value | Why |
 |---|---|---|
-| `MATCH_COUNT` | 5 | 3 and 4 were measured and both broke a follow-up case |
-| `MATCH_THRESHOLD` | 0.40 | calibrated from the measured score distribution |
-| `EMBED_MODEL` | `text-embedding-3-small` | 1536-dim, cheap, sufficient at this corpus size |
+| `MATCH_COUNT` | 5 | 3 and 4 were measured and both broke the same follow-up case |
+| `MATCH_THRESHOLD` | 0.40 | calibrated from measured scores: in-corpus questions top out around 0.63-0.66, comparisons and follow-ups at 0.55-0.61, out-of-corpus ones at 0.44 |
+| `EMBED_MODEL` | `text-embedding-3-small` | 1536-dim and cheap; at 38 chunks a larger model has nothing to resolve |
+| `MODEL_MANAGER` / `MODEL_SPECIALIST` | `gpt-4o-mini` | see below |
+| `HISTORY_TURNS` | 4 | measured against 2: both scored the same, but the value counts *messages*, so 2 is one exchange with no margin for a two-step follow-up |
+| `MAX_TOKENS_MANAGER` / `_SPECIALIST` | 250 / 400 | a server-side ceiling, so one bad answer cannot run away with the budget |
+| `RATE_LIMIT_PER_MIN` | 15 per client address | counted in `request_log`; fails open, because a broken limiter should not break the product it guards |
+
+**Both agents use `gpt-4o-mini`, deliberately the same model.** The Specialist's
+job is extraction from a context the Manager has already narrowed, not
+reasoning, so the harder work is the routing decision rather than the answer. A
+larger model was never adopted because accuracy was never the bottleneck —
+every failure traced to routing or to the test set, not to the model's ability
+to read a paragraph. Using one model for both also keeps the token comparison
+between the two paths honest.
 
 **What gets embedded is the question plus the Manager's rewrite**, not either
 alone. The Manager rewrites "kapan WFH?" into a full Indonesian noun phrase
@@ -122,7 +134,33 @@ out-of-domain, and history-dependent follow-ups.
 | Golden set | **40/42** |
 | Tokens per question | **843** |
 | recall@k | **100%** |
+| precision@k | **33%** |
 | Naive baseline (historical, 18-question set) | 2,654 tokens |
+
+**Why recall is 100%, and why that is not a free pass.** An earlier version of
+this set was too easy: every question mapped to exactly one chunk, so `k=1`
+passed all of it and looked like a saving. Adding two questions that genuinely
+need two sections at once — comparing plan prices, comparing the attachment
+limit against the export limit — broke `k=1` immediately. The set has been kept
+hard since: it includes questions whose answer is deliberately absent from the
+corpus, near-identical sections that must not be confused, and follow-ups that
+only resolve against the conversation. 100% means the right section was
+retrieved for every question that has one, on that set — not that retrieval is
+solved.
+
+**Why precision is only 33%, and why that is arithmetic rather than quality.**
+Of the 15 questions with expected sections, 13 need exactly one and 2 need two.
+With `k` fixed at 5, a single-answer question can score at most 0.20 however
+perfect the ranking is, which puts the ceiling for this set at about 23%. The
+measured 33% is *above* that, because the similarity floor frequently returns
+fewer than five chunks. The real cost of a fixed `k` is the tokens, not the
+precision figure.
+
+**Where the 843 tokens go.** 591 of them are the Manager's system prompt — the
+routing policy plus the document map — paid on every question, including one
+that ends in a one-sentence refusal. That is the largest single line item by a
+wide margin, and it is also the one that resisted compression: cutting it is
+what produced the 694-token run that lost correctness.
 
 The two failures are known and left unpatched rather than hidden:
 
