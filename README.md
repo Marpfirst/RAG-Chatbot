@@ -49,6 +49,46 @@ When nothing clears the similarity floor, the Specialist is skipped entirely and
 the system replies "not in the documents" — so an out-of-corpus question is one
 of the *cheapest* paths, not the most expensive.
 
+## How the RAG works
+
+**Chunking is structure-aware, not fixed-size.** `scripts/seed.ts` splits each
+document at its `##` headings — one chunk per section, four documents into 38
+chunks. The boundaries are the ones a human already wrote, so there is **no
+overlap**: overlap exists to soften a boundary a chunker had to guess at, and
+duplicating tokens into every retrieval to soften a heading would be paying for
+nothing.
+
+Each chunk is stored with a contextual header, `[Harga Sigap > Paket Tumbuh]`,
+about 13 tokens that keep it unambiguous once it is pulled out of its document
+and read alone. Its id is that same pair: `pricing#paket-tumbuh`.
+
+**Embeddings** are `text-embedding-3-small`, 1536 dimensions, the same model for
+the corpus and for queries. They live in Postgres via **Supabase pgvector**, and
+`match_chunks` (in `supabase/schema.sql`) does the search in SQL: cosine
+similarity, with both the similarity floor and the row limit applied inside the
+query so rejected rows never leave the database.
+
+There is **no ANN index**, deliberately. At 38 rows a sequential scan is
+instant, and `ivfflat` needs far more rows before its lists mean anything.
+
+| Setting | Value | Why |
+|---|---|---|
+| `MATCH_COUNT` | 5 | 3 and 4 were measured and both broke a follow-up case |
+| `MATCH_THRESHOLD` | 0.40 | calibrated from the measured score distribution |
+| `EMBED_MODEL` | `text-embedding-3-small` | 1536-dim, cheap, sufficient at this corpus size |
+
+**What gets embedded is the question plus the Manager's rewrite**, not either
+alone. The Manager rewrites "kapan WFH?" into a full Indonesian noun phrase
+before searching — the raw abbreviation scores 0.370 and falls under the floor,
+the phrase scores 0.787 against the same chunk. But the rewrite alone loses
+named entities, and the question alone breaks follow-ups, so both are embedded
+together for about five extra tokens.
+
+The contextual header is part of what is embedded — it is what separates three
+near-identical leave sections in vector space — but it is **stripped before the
+Specialist reads the chunk**. By then the context is already narrowed, so
+keeping it would be paying for the same disambiguation twice.
+
 ## Routing philosophy
 
 | Question | Route |
@@ -142,17 +182,26 @@ To deploy, import the repository on Vercel and set the same environment
 variables. `NAIVE_MODE` must stay `false`, or visitors get the 2,654-token
 baseline instead of the real system.
 
+`vercel.json` pins the function to `sin1`. Vercel's default region is `iad1`
+(Washington DC) while the Supabase project answers from Singapore, so every
+dynamic render crossed the Pacific twice: the query itself takes 40-80 ms, but
+the page took 683 ms. Pinned next to the database it is 150-250 ms. Change the
+region if your Supabase project lives elsewhere — `curl -sI <url>/history` and
+read `X-Vercel-Id`, which names the edge and the execution region.
+
 ## Project layout
 
 ```
-app/           chat UI, /history, /documents, POST /api/chat
-components/    shell, document table, local-time formatting
-lib/agents/    manager.ts (routing + general answers), specialist.ts (grounded)
-lib/           retrieval, usage logging, history, db, llm, env
-docs/id/       the four source documents
-eval/          golden.jsonl + three saved results
-scripts/       seed, eval, repro, smoke
-supabase/      schema.sql
+app/                    chat UI, /history, /documents, POST /api/chat
+components/             shell, answer renderer, document table, local time
+lib/agents/             manager.ts (routing + general answers), specialist.ts
+lib/                    retrieval, usage logging, history, db, llm, env
+docs/id/                the four source documents
+eval/                   golden.jsonl + three saved results
+scripts/                seed, eval, repro, smoke
+supabase/schema.sql     tables, match_chunks, RLS — a fresh install runs this alone
+supabase/migrations/    later changes, for databases created before them
+vercel.json             pins the function region next to the database
 ```
 
 ## License
