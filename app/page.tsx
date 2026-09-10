@@ -94,6 +94,64 @@ function save(value: Stored) {
   }
 }
 
+type Reply = { conversationId?: string; turn: Omit<Turn, "id"> };
+
+/**
+ * The in-flight request, held outside the component.
+ *
+ * A fetch started inside the chat page dies with it: navigating to History
+ * unmounts the page, the request still completes on the server, but the
+ * setState that would have shown the answer runs against a component that no
+ * longer exists and React drops it silently. The answer was in the database and
+ * nowhere on screen.
+ *
+ * Kept at module scope, the promise outlives the unmount, and the page picks it
+ * back up when it mounts again. Cleared by whichever side consumes it, so the
+ * answer is appended exactly once.
+ */
+let inFlight: { convId?: string; promise: Promise<Reply> } | null = null;
+
+function startRequest(question: string, convId: string | undefined) {
+  const promise = (async (): Promise<Reply> => {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: question, conversationId: convId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return {
+          conversationId: convId,
+          turn: { role: "error", text: data.error ?? "Terjadi kesalahan.", at: clock() },
+        };
+      }
+      return {
+        conversationId: data.conversationId,
+        turn: {
+          role: "assistant",
+          text: data.answer,
+          at: clock(),
+          agent: data.agent,
+          model: data.model,
+          tokens: data.tokens,
+          latencyMs: data.latencyMs,
+          breakdown: data.breakdown,
+          sources: data.sources ?? [],
+        },
+      };
+    } catch {
+      return {
+        conversationId: convId,
+        turn: { role: "error", text: "Gagal menghubungi server.", at: clock() },
+      };
+    }
+  })();
+
+  inFlight = { convId, promise };
+  return promise;
+}
+
 export default function Page() {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
@@ -106,8 +164,12 @@ export default function Page() {
   const threadRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const nextId = useRef(1);
+  // Whether this component is still mounted. A resolved request must not be
+  // consumed by a dead component — that is exactly how the answer went missing.
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     const stored = load();
     if (stored) {
       setTurns(stored.turns ?? []);
@@ -115,6 +177,24 @@ export default function Page() {
       nextId.current = Math.max(0, ...(stored.turns ?? []).map((t) => t.id)) + 1;
     }
     setHydrated(true);
+
+    // A request that was in flight when this page unmounted is still running.
+    // Reattach to it so its answer lands here instead of being dropped.
+    if (inFlight) {
+      const waiting = inFlight;
+      setBusy(true);
+      waiting.promise.then((reply) => {
+        // Already resolved if the request finished while the page was away —
+        // then this fires immediately.
+        if (!mounted.current || inFlight !== waiting) return;
+        inFlight = null;
+        applyReply(reply);
+      });
+    }
+    return () => {
+      mounted.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -141,6 +221,7 @@ export default function Page() {
   );
 
   function newChat() {
+    inFlight = null;
     setTurns([]);
     setConvId(undefined);
     setSelected(null);
@@ -153,51 +234,24 @@ export default function Page() {
     const question = text.trim();
     if (!question || busy) return;
 
-    const at = clock();
-    setTurns((t) => [...t, { id: nextId.current++, role: "user", text: question, at }]);
+    setTurns((t) => [...t, { id: nextId.current++, role: "user", text: question, at: clock() }]);
     setInput("");
     setBusy(true);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: question, conversationId: convId }),
-      });
-      const data = await res.json();
+    const reply = await startRequest(question, convId);
+    // If the page was left mid-request, leave inFlight in place with its
+    // resolved promise. Whichever mount comes next claims it.
+    if (!mounted.current) return;
+    inFlight = null;
+    applyReply(reply);
+  }
 
-      if (!res.ok) {
-        setTurns((t) => [
-          ...t,
-          { id: nextId.current++, role: "error", text: data.error ?? "Terjadi kesalahan.", at: clock() },
-        ]);
-      } else {
-        setConvId(data.conversationId);
-        setTurns((t) => [
-          ...t,
-          {
-            id: nextId.current++,
-            role: "assistant",
-            text: data.answer,
-            at: clock(),
-            agent: data.agent,
-            model: data.model,
-            tokens: data.tokens,
-            latencyMs: data.latencyMs,
-            breakdown: data.breakdown,
-            sources: data.sources ?? [],
-          },
-        ]);
-      }
-    } catch {
-      setTurns((t) => [
-        ...t,
-        { id: nextId.current++, role: "error", text: "Gagal menghubungi server.", at: clock() },
-      ]);
-    } finally {
-      setBusy(false);
-      boxRef.current?.focus();
-    }
+  function applyReply(reply: Reply) {
+    if (reply.conversationId) setConvId(reply.conversationId);
+    setTurns((t) => [...t, { id: nextId.current++, ...reply.turn }]);
+    setBusy(false);
+    boxRef.current?.focus();
+    window.dispatchEvent(new Event("recent-chats:refresh"));
   }
 
   return (
