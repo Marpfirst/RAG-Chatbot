@@ -1,8 +1,17 @@
-import RefreshOnMount from "@/components/RefreshOnMount";
+import { unstable_cache } from "next/cache";
 import LocalTime from "@/components/LocalTime";
 import { db } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+/**
+ * History changes for one reason: a chat answer was stored. That is a mutation
+ * the application knows about, so it invalidates this page itself — see
+ * `refreshHistory` in app/actions.ts, called once per answer.
+ *
+ * The 30-second window is only a backstop for changes this browser did not
+ * make, such as another visitor asking a question. Own answers do not wait for
+ * it; the tag clears immediately.
+ */
+export const revalidate = 30;
 
 type Row = {
   message_id: number;
@@ -17,14 +26,21 @@ type Row = {
   agent_calls: number;
 };
 
-export default async function History() {
-  const { data, error } = await db()
-    .from("question_history")
-    .select("*")
-    .order("message_id", { ascending: false })
-    .limit(50);
+const loadHistory = unstable_cache(
+  async () => {
+    const { data, error } = await db()
+      .from("question_history")
+      .select("*")
+      .order("message_id", { ascending: false })
+      .limit(50);
+    return { rows: (data ?? []) as Row[], error: error?.message ?? null };
+  },
+  ["history-rows"],
+  { revalidate, tags: ["history"] }
+);
 
-  const rows = (data ?? []) as Row[];
+export default async function History() {
+  const { rows, error } = await loadHistory();
   const avg = rows.length
     ? Math.round(rows.reduce((n, r) => n + r.total_tokens, 0) / rows.length)
     : 0;
@@ -35,7 +51,6 @@ export default async function History() {
 
   return (
     <>
-      <RefreshOnMount />
       <div className="page">
         <div className="page-inner">
           <h2>Token history</h2>
@@ -45,7 +60,7 @@ export default async function History() {
             {bySpecialist.length > 0 && ` · specialist ${mean(bySpecialist).toLocaleString("en-US")}`}
           </p>
 
-          {error && <p className="hint">Could not load: {error.message}</p>}
+          {error && <p className="hint">Could not load: {error}</p>}
           {!error && rows.length === 0 && <p className="hint">No conversations yet.</p>}
 
           {rows.length > 0 && (

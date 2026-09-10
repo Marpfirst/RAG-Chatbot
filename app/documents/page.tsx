@@ -1,9 +1,19 @@
-import RefreshOnMount from "@/components/RefreshOnMount";
+import { unstable_cache } from "next/cache";
 import DocumentTable, { type DocChunk } from "@/components/DocumentTable";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 
-export const dynamic = "force-dynamic";
+/**
+ * The corpus only changes when `npm run seed` is run, which happens outside the
+ * application entirely — nothing in the UI writes to `chunks`. So this page is
+ * cached and served without touching Supabase, and navigating back to it costs
+ * no request at all.
+ *
+ * An hour is the ceiling on how long a re-seed can go unnoticed. There is no
+ * mutation to hang an invalidation off, so time is the only honest trigger; a
+ * redeploy clears it sooner.
+ */
+export const revalidate = 3600;
 
 type Row = {
   id: string;
@@ -13,14 +23,29 @@ type Row = {
   content: string;
 };
 
-export default async function Documents() {
-  const { data, error } = await db()
-    .from("chunks")
-    .select("id, doc, section, token_count, content")
-    .eq("lang", env.corpusLang())
-    .order("id");
+/**
+ * Cached by result rather than by `fetch`.
+ *
+ * Marking the fetch itself cacheable did not work: measured over five requests
+ * it still hit Supabase five times, because supabase-js drives its own request
+ * and Next's patched `fetch` would not take it. `unstable_cache` keys on the
+ * function instead, so it does not depend on how the client builds a request.
+ */
+const loadChunks = unstable_cache(
+  async () => {
+    const { data, error } = await db()
+      .from("chunks")
+      .select("id, doc, section, token_count, content")
+      .eq("lang", env.corpusLang())
+      .order("id");
+    return { rows: (data ?? []) as Row[], error: error?.message ?? null };
+  },
+  ["documents-chunks"],
+  { revalidate, tags: ["chunks"] }
+);
 
-  const rows = (data ?? []) as Row[];
+export default async function Documents() {
+  const { rows, error } = await loadChunks();
 
   // The stored content carries the contextual header ("[Harga Sigap > Paket
   // Tumbuh]") that the retriever relies on. It is shown as the Document and
@@ -38,7 +63,6 @@ export default async function Documents() {
 
   return (
     <>
-      <RefreshOnMount />
       <div className="page">
         <div className="page-inner">
           <h2>Documents</h2>
@@ -49,7 +73,7 @@ export default async function Documents() {
             untuk membaca isinya.
           </p>
 
-          {error && <p className="hint">Could not load: {error.message}</p>}
+          {error && <p className="hint">Could not load: {error}</p>}
           {!error && chunks.length === 0 && (
             <p className="hint">Corpus not seeded yet. Run `npm run seed`.</p>
           )}

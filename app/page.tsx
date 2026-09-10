@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { createPortal } from "react-dom";
+import { refreshHistory } from "./actions";
 import Link from "next/link";
 
 type Breakdown = {
@@ -252,13 +253,18 @@ export default function Page() {
     setBusy(false);
     boxRef.current?.focus();
     window.dispatchEvent(new Event("recent-chats:refresh"));
+    // The answer is already in the database by the time the reply lands, so
+    // History is now one row out of date. Telling it so here is what lets that
+    // page be cached at all: it no longer has to refetch on every visit just in
+    // case. Fire and forget — nothing on this screen depends on the result.
+    void refreshHistory();
   }
 
   return (
     <Fragment>
       {portalNode &&
         createPortal(
-          <div className="session-content">
+          <div className="session">
             <dl>
               <dt>Session</dt>
               <dd>{session.questions} questions</dd>
