@@ -37,15 +37,18 @@ const EXPECT_MANAGER_ANSWER = new Set([0, 1, 5, 6, 7]);
  * temperature 0, so no prompt wording can be credited with fixing it on the
  * strength of one green run.
  *
- * Turns 6 and 7 fail consistently and are a different fault. By then the turn
- * immediately before has already answered the same question, and the manager
- * reads the repeat as a request for something more specific: it routes to
- * search, the two-letter query clears no chunk above the similarity floor, and
- * the user gets "not in the documents" for a question answered correctly a
- * moment earlier. Three prompt rules were tried against it — banning route
- * drift from history, stating that a repeat is not a reason to search, and
- * halving the history window — and none moved it; the last two are recorded
- * with their numbers in NOTES.
+ * Turns 6 and 7 used to fail on every run, and were a different fault: by then
+ * the turn immediately before had already answered the same question, and the
+ * manager read the repeat as a request for something more specific, routed to
+ * search, and returned "not in the documents" for a question it had answered
+ * correctly a moment earlier. Three prompt rules were tried against it
+ * directly and none moved it.
+ *
+ * Scoping the definition rule to the term rather than the question form fixed
+ * them as a side effect — one run had all eight turns green. But only most of
+ * the time: a second run put 7 back. They are kept in this set because
+ * "usually passes" is not the same as fixed, and pretending otherwise would
+ * hide the next regression.
  *
  * Marked known rather than silently dropped: if a prompt or model change ever
  * makes them pass, that is worth noticing.

@@ -480,6 +480,98 @@ Ketiganya ditandai `KNOWN_LIMITATION` di `scripts/repro.ts`: tetap dijalankan
 dan tetap terlihat, tapi tidak dihitung sebagai kegagalan. Kalau suatu saat
 lolos, itu justru layak diketahui.
 
+### Batas domain bocor dalam bahasa Indonesia, dan eval-nya buta soal itu
+
+Ditemukan bukan oleh eval, tapi oleh dipakai langsung. Ditanya `apa itu python`,
+manager menjelaskan Python panjang lebar. Begitu juga `apa itu javascript`,
+`apa itu html`, `apa itu next js`.
+
+Yang bikin ini pantas dicatat: `a03` di golden set adalah **"What is Python?"**,
+dan kasus itu **lulus**. Pertanyaan yang sama persis, dua bahasa:
+
+| Pertanyaan | Rute | Hasil |
+|---|---|---|
+| `What is Python?` | manager | ditolak |
+| `Apa itu Python?` | manager | **dijawab** |
+
+Jadi bukan soal huruf besar-kecil, tapi bahasa — dan eval hanya menguji sisi
+Inggrisnya. Ini pengulangan pelajaran yang sudah tertulis di §3: **wilayah yang
+tidak diuji adalah wilayah yang bocor.** Saya menulis kalimat itu sendiri, lalu
+mengulangi kesalahannya.
+
+Penyebabnya satu baris yang saya tambahkan sendiri untuk memperbaiki hal lain:
+
+> `Explaining what a term means is STEP 2 whenever the term belongs to that domain.`
+
+Aturan itu mengunci pada **bentuk pertanyaan**, bukan topiknya. Bentuk "apa itu
+X" khas Indonesia, dan model membacanya sebagai izin untuk menjelaskan X apa
+pun. Ironisnya baris itu ditambahkan justru supaya `Apa itu API?` dan
+`Apa itu reimbursement?` berhenti ditolak — bentuk kalimat yang sama persis.
+
+Lima kasus Indonesia ditambahkan ke golden set dulu, tanpa mengubah kode, supaya
+angka sebelum-sesudah diukur di soal yang sama. Lalu enam variasi prompt diukur
+satu per satu:
+
+| Variasi | avg token | Lulus | Catatan |
+|---|---:|---:|---|
+| Baseline (39 soal) | 801 | 34/39 | kelima kasus baru gagal |
+| Aturan istilah dibuang | 763 | 35/39 | bocor tertutup, tapi 4 kasus lain jatuh |
+| Aturan istilah dipersempit | 813 | 37/39 | |
+| "mengoperasikan, bukan membangun" | 813 | 35/39 | boundary 7/7, tapi bocor lagi |
+| Keduanya sekaligus | 819 | 35/39 | terlalu ketat, boundary 3/7 |
+| **Izin dan larangan dipisah** | **806** | **37-38/39** | **dipakai** |
+| + "oddly capitalised" | 790 | 36/39 | ditolak |
+
+Yang dipakai memisahkan izin dari larangannya jadi dua kalimat: menjelaskan
+istilah **dalam** domain itu STEP 2, dan istilah **di luar** domain tetap di
+luar bagaimanapun ditanyakannya. Menggabungkannya dalam satu kalimat, seperti
+percobaan kedua dan kelima, membuat model menerapkan salah satu sisinya ke
+semua istilah.
+
+Efek sampingnya di luar dugaan: giliran 6 dan 7 di `scripts/repro.ts` — drift
+multi-turn yang **gagal konsisten** dan tiga aturan sebelumnya tidak bisa
+sentuh — sekarang lebih sering lolos daripada gagal. Satu run hijau semua. Tapi
+run kedua menjatuhkan giliran 7 lagi, jadi tetap ditandai `KNOWN_LIMITATION`:
+"biasanya lolos" bukan "sudah beres".
+
+Yang tersisa: `wHaT iS sLa` ditolak 5 dari 5 kali, sementara `WHAT IS SLA`
+dijawab 5 dari 5. Aturan "casing bukan kriteria" sudah ada di prompt dan tidak
+menahan bentuk selang-seling itu. Dibiarkan gagal dan dicatat, bukan dihapus
+dari golden set.
+
+### Jawaban STEP 2 tidak punya grounding sama sekali
+
+Juga ditemukan dengan dipakai langsung. `apa itu RAG?` dijawab **"Red, Amber,
+Green"** dengan yakin, lalu `apa itu rag chatbot` mengarang satu paragraf utuh
+di atas definisi salah itu.
+
+Itu bukan bug, itu desainnya: STEP 2 memang manager menjawab dari pengetahuannya
+sendiri, tanpa retrieval dan tanpa pengecekan. Artinya **tidak ada jaminan
+akurasi apa pun di jalur STEP 2**, dan tidak ada hedge yang memberi tahu pembaca
+bahwa jawaban itu tidak berasal dari dokumen. Untuk asisten internal itu risiko
+nyata. Tidak diperbaiki di sini karena menambah hedge berarti menambah token di
+setiap jawaban STEP 2, dan itu variabel tersendiri yang belum diukur.
+
+### Riwayat percakapan menggandakan biaya, dan benchmark-nya tidak menunjukkan itu
+
+Pertanyaan yang sama persis, diukur:
+
+| Konteks | Token |
+|---|---:|
+| Percakapan baru | 693 |
+| Setelah 1 tanya-jawab | 788 |
+| Setelah 2 tanya-jawab | 1.125 |
+| Setelah 5 (plateau) | 1.008 |
+
+`HISTORY_TURNS=4` membatasi di 4 pesan, jadi angkanya berhenti naik sekitar
+1.000. Tapi 4 pesan itu termasuk jawaban 3-kalimat model sendiri, ~70 token
+masing-masing.
+
+Golden set hampir seluruhnya satu giliran, jadi angka rata-rata di dokumen ini
+adalah **skenario terbaik**, bukan angka pemakaian nyata. Percakapan berantai
+membayar ~150-200 token lebih per giliran. Ini kelemahan alat ukurnya, dan lebih
+jujur disebut daripada dibiarkan orang menyimpulkan sendiri.
+
 ### Dokumen memakai kosakata penulisnya, bukan kosakata penanyanya
 
 Ditemukan dengan menembakkan pertanyaan di sekitar batas, bukan oleh eval.

@@ -23,8 +23,14 @@ export function db() {
        * cacheable instead was tried first and measured, and it still hit
        * Supabase on all five of five requests — supabase-js builds its own
        * request, and Next's patched `fetch` would not take it.
+       *
+       * `no-store` is also what forces both cached pages to render dynamically,
+       * which is deliberate. Letting them be statically generated instead
+       * breaks the build, and relaxing this line to make that work would cache
+       * the rate-limit count, the retrieval RPC and the conversation history
+       * along with it — three things that must always read the database now.
        */
-      fetch: (input, init) => fetch(input, { ...init, cache: "default" }),
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
     },
   });
 }

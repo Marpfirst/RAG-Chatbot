@@ -15,6 +15,11 @@ import { env } from "@/lib/env";
  */
 export const revalidate = 3600;
 
+// Rendered per request, but the query above it is not repeated per request:
+// `unstable_cache` serves that. Stated explicitly because the reads go
+// through a `no-store` client, so static generation would fail the build.
+export const dynamic = "force-dynamic";
+
 type Row = {
   id: string;
   doc: string;

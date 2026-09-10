@@ -296,6 +296,24 @@ Stated here rather than left to be discovered:
   model's tokenizer. The chat model bills with `o200k_base`, which is about 19%
   cheaper on this corpus. Every per-chunk figure taken from that column was
   therefore inflated.
+- **The scope boundary leaked in Indonesian, and the eval could not see it.**
+  `What is Python?` was declined; `Apa itu Python?` was answered at length, along
+  with JavaScript, HTML and Next.js. The golden set only ever tested the English
+  phrasing. A rule meant to stop in-domain terms being declined had keyed on the
+  question form rather than the topic, and "apa itu X" is the Indonesian form of
+  exactly that. Five Indonesian cases were added to the set before any code
+  changed, and six prompt variants were measured one at a time; the numbers are
+  in [NOTES.md](NOTES.md). Fixed, at 37-38/39 against 34/39 before.
+- **A STEP 2 answer is ungrounded by construction.** Asked `apa itu RAG?`, the
+  manager confidently answered "Red, Amber, Green" and then built a paragraph on
+  top of it. That path answers from the model's own knowledge with no retrieval
+  and no hedge, so nothing marks the difference between a document-backed answer
+  and a guess. Not fixed: adding a hedge costs tokens on every general answer,
+  and that is a separate measurement.
+- **Reported token averages are best-case.** The golden set is almost entirely
+  single-turn. The same question costs 693 tokens in a fresh conversation and
+  1,125 after two exchanges, because history goes to the manager. Real chained
+  use pays roughly 150-200 tokens more per turn than the headline figure.
 - **The line between "general but relevant" and "out of domain" has no
   objective answer.** The task specification says the manager may answer general
   questions and does not define *general*, so every routing score in this
