@@ -29,5 +29,4 @@ docs/*.drawio
 Thumbs.db
 !README.md
 !NOTES.md
-!ARCHITECTURE.md
 node_modules

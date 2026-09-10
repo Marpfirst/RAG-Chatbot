@@ -10,9 +10,7 @@
     "seed": "tsx scripts/seed.ts",
     "eval": "tsx scripts/eval.ts",
     "repro": "tsx scripts/repro.ts",
-    "probe": "tsx scripts/probe.ts",
-    "smoke": "tsx scripts/smoke.ts",
-    "chunkscore": "tsx scripts/chunkscore.ts"
+    "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
