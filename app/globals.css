@@ -191,14 +191,15 @@ nav {
 nav a {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 18px;
+  gap: 12px;
+  padding: 12px 14px;
   border-radius: var(--radius-pill);
   color: var(--text-sidebar);
   text-decoration: none;
   font-size: 14.5px;
   font-weight: 500;
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
 .shell.is-collapsed nav a {
@@ -1017,7 +1018,7 @@ table.data th.num {
   .shell.is-collapsed .sidebar { padding: 32px 24px 24px; align-items: stretch; }
   .shell.is-collapsed .sidebar-header { justify-content: space-between; }
   .shell.is-collapsed .brand { opacity: 1; width: auto; overflow: visible; }
-  .shell.is-collapsed nav a { padding: 12px 18px; justify-content: flex-start; border-radius: var(--radius-pill); }
+  .shell.is-collapsed nav a { padding: 12px 14px; justify-content: flex-start; border-radius: var(--radius-pill); }
   .shell.is-collapsed nav a span { display: inline; }
   .shell.is-collapsed .session { display: block; }
   .shell.is-collapsed .user-profile { padding-top: 24px; }
@@ -1275,10 +1276,19 @@ table.data tbody tr > td {
   transform: rotate(180deg);
 }
 
-.doc-detail > td {
-  padding: 0 16px 20px;
-  background: rgba(127, 127, 127, 0.04);
+table.data tbody tr.doc-row[data-open="true"] > td {
+  background: rgba(127, 127, 127, 0.05);
+  border-bottom-color: transparent;
+}
+
+/* Qualified up to `table.data tbody` on purpose: the generic `table.data td`
+   rule is more specific than a lone `.doc-detail > td`, so its nowrap and its
+   padding would win and this row would render with the wrong spacing. */
+table.data tbody tr.doc-detail > td {
+  padding: 2px 16px 20px 72px;
+  background: rgba(127, 127, 127, 0.05);
   white-space: normal;
+  border-bottom: 1px solid var(--border);
 }
 
 .doc-detail p {
