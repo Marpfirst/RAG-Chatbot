@@ -1,4 +1,3 @@
-import Shell from "@/components/Shell";
 import RefreshOnMount from "@/components/RefreshOnMount";
 import LocalTime from "@/components/LocalTime";
 import { db } from "@/lib/db";
@@ -35,7 +34,7 @@ export default async function History() {
     xs.length ? Math.round(xs.reduce((n, r) => n + r.total_tokens, 0) / xs.length) : 0;
 
   return (
-    <Shell>
+    <>
       <RefreshOnMount />
       <div className="page">
         <div className="page-inner">
@@ -106,6 +105,6 @@ export default async function History() {
           )}
         </div>
       </div>
-    </Shell>
+    </>
   );
 }

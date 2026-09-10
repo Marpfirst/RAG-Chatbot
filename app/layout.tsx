@@ -13,6 +13,8 @@ export const metadata: Metadata = {
  */
 const THEME_SCRIPT = `(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia("(prefers-color-scheme: dark)").matches;if(s==="dark"||(!s&&d))document.documentElement.classList.add("dark")}catch(e){}})()`;
 
+import Shell from "@/components/Shell";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -20,7 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <Shell>
+          {children}
+        </Shell>
+      </body>
     </html>
   );
 }

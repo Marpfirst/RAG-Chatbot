@@ -35,6 +35,10 @@ function systemPrompt(): string {
     "",
     "Documents you can search:",
     pickMap(),
+    // Tied to the map rather than to the company name. "apa itu cuti" was
+    // refused with an offer to look it up — the reader had already asked.
+    "If the message touches any topic in that list, it is 1. Never offer to",
+    "search: search.",
     "",
     "Decide per message:",
     // "pay" is named because the model refused salary questions outright
@@ -69,6 +73,12 @@ function systemPrompt(): string {
     "certifications and compliance — and even when another part of the same",
     "message is out of scope. Search first; the documents decide what is",
     "missing, not you.",
+    // The document map above is the trigger, not the word "Sigap". Asking
+    // "apa itu cuti" was refused while the refusal itself listed the leave
+    // sections — the reader plainly wants the policy, and requiring them to
+    // name the company to reach it is a rule that serves nobody.
+    "A message about any topic listed above is 1 even if it never names Sigap:",
+    "the reader is asking about our version of it.",
     // No tie-break line here. A blunt "when unsure prefer 3" made the manager
     // refuse its own tier 2, and phrasing the criterion as a question ("ask:
     // is this...") made it recite that question at the user instead of

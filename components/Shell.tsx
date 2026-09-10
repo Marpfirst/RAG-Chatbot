@@ -24,10 +24,8 @@ const NAV = [
 
 export default function Shell({
   children,
-  session,
 }: {
   children: ReactNode;
-  session?: ReactNode;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -95,7 +93,7 @@ export default function Shell({
         </nav>
 
         <div className="sidebar-footer">
-          {session && <div className="session">{session}</div>}
+          <div id="sidebar-session-portal"></div>
 
           <div className="theme-toggle-wrap">
             <div style={{display: 'flex', alignItems: 'center', gap: 12}}>

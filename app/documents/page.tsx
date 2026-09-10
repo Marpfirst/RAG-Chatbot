@@ -1,4 +1,3 @@
-import Shell from "@/components/Shell";
 import RefreshOnMount from "@/components/RefreshOnMount";
 import DocumentTable, { type DocChunk } from "@/components/DocumentTable";
 import { db } from "@/lib/db";
@@ -38,7 +37,7 @@ export default async function Documents() {
   const total = chunks.reduce((n, c) => n + c.token_count, 0);
 
   return (
-    <Shell>
+    <>
       <RefreshOnMount />
       <div className="page">
         <div className="page-inner">
@@ -65,6 +64,6 @@ export default async function Documents() {
           )}
         </div>
       </div>
-    </Shell>
+    </>
   );
 }

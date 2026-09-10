@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import Shell from "@/components/Shell";
 
 type Breakdown = {
   agent: "manager" | "specialist";
@@ -164,12 +164,12 @@ export default function Page() {
   const threadRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const nextId = useRef(1);
-  // Whether this component is still mounted. A resolved request must not be
-  // consumed by a dead component — that is exactly how the answer went missing.
   const mounted = useRef(true);
+  const [portalNode, setPortalNode] = useState<Element | null>(null);
 
   useEffect(() => {
     mounted.current = true;
+    setPortalNode(document.getElementById("sidebar-session-portal"));
     const stored = load();
     if (stored) {
       setTurns(stored.turns ?? []);
@@ -255,22 +255,23 @@ export default function Page() {
   }
 
   return (
-    <Shell
-      session={
-        <>
-          <dl>
-            <dt>Session</dt>
-            <dd>{session.questions} questions</dd>
-            <dd>{session.tokens.toLocaleString("en-US")} tokens</dd>
-          </dl>
-          {turns.length > 0 && (
-            <button className="new-chat" onClick={newChat}>
-              New chat
-            </button>
-          )}
-        </>
-      }
-    >
+    <Fragment>
+      {portalNode &&
+        createPortal(
+          <div className="session-content">
+            <dl>
+              <dt>Session</dt>
+              <dd>{session.questions} questions</dd>
+              <dd>{session.tokens.toLocaleString("en-US")} tokens</dd>
+            </dl>
+            {turns.length > 0 && (
+              <button className="new-chat" onClick={newChat}>
+                New chat
+              </button>
+            )}
+          </div>,
+          portalNode
+        )}
       <div className={`main${detail ? " with-panel" : ""}`}>
         <div className="column">
           <div className="thread" ref={threadRef}>
@@ -447,7 +448,7 @@ export default function Page() {
 
         {detail && <Panel turn={detail} onClose={() => setSelected(null)} />}
       </div>
-    </Shell>
+    </Fragment>
   );
 }
 
