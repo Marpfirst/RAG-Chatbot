@@ -88,7 +88,7 @@ textarea {
 
 .shell {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 290px minmax(0, 1fr);
   height: 100dvh;
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -117,10 +117,12 @@ textarea {
   justify-content: space-between;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: relative;
 }
 
-.shell.is-collapsed .sidebar-header {
-  justify-content: center;
+.shell.is-collapsed .collapse-btn {
+  right: 50%;
+  transform: translateX(50%);
 }
 
 .brand {
@@ -162,7 +164,9 @@ textarea {
   color: var(--text-sidebar);
   cursor: pointer;
   flex-shrink: 0;
-  margin-right: 8px;
+  position: absolute;
+  right: 12px;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, color 0.2s ease;
 }
 
 .collapse-btn:hover {
@@ -170,15 +174,16 @@ textarea {
   color: var(--text-sidebar-brand);
 }
 
-.collapse-btn svg {
+.collapse-btn svg,
+.collapse-btn i {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
-  stroke-width: 2;
+  opacity: 0.7;
   transition: transform 0.3s ease;
 }
 
-.shell.is-collapsed .collapse-btn svg {
+.shell.is-collapsed .collapse-btn svg,
+.shell.is-collapsed .collapse-btn i {
   transform: rotate(180deg);
 }
 
@@ -204,9 +209,9 @@ nav a {
 }
 
 .shell.is-collapsed nav a {
-  padding: 12px;
-  justify-content: center;
-  border-radius: 12px;
+  padding: 12px 14px;
+  justify-content: flex-start;
+  border-radius: var(--radius-pill);
 }
 
 .shell.is-collapsed nav a span {
@@ -223,10 +228,14 @@ nav a[aria-current="page"] {
   color: var(--text-sidebar-active);
 }
 
-nav a svg {
+nav a svg,
+nav a i {
   width: 20px;
   height: 20px;
-  flex: none;
+  opacity: 0.7;
+}
+
+nav a svg {
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
@@ -1009,7 +1018,7 @@ table.data th.num {
   .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    width: 280px;
+    width: 290px;
     z-index: 40;
     transform: translateX(-100%);
     transition: transform 0.25s ease;

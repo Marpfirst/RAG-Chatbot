@@ -8,32 +8,17 @@ const NAV = [
   {
     href: "/",
     label: "Chat",
-    icon: (
-      <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.9-.9L3 21l1.9-4.1A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4Z" />
-      </svg>
-    ),
+    icon: <i className="far fa-comment-dots" style={{ fontSize: '20px' }}></i>,
   },
   {
     href: "/history",
     label: "History",
-    icon: (
-      <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 3v5h5" />
-        <path d="M3.5 13a9 9 0 1 0 2.1-6.4L3 8" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    ),
+    icon: <i className="fas fa-history" style={{ fontSize: '20px' }}></i>,
   },
   {
     href: "/documents",
     label: "Documents",
-    icon: (
-      <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-        <path d="M14 3v5h5" />
-      </svg>
-    ),
+    icon: <i className="far fa-file-alt" style={{ fontSize: '20px' }}></i>,
   },
 ];
 
@@ -97,7 +82,7 @@ export default function Shell({
             <p>Chatbot untuk dokumen internal.</p>
           </div>
           <button className="collapse-btn desktop-only" onClick={toggleCollapse} aria-label="Toggle Sidebar">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <i className="fas fa-chevron-left" style={{ fontSize: '16px' }}></i>
           </button>
           <button className="close-btn mobile-only" onClick={() => setOpen(false)} aria-label="Close Sidebar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -124,9 +109,9 @@ export default function Shell({
           <div className="theme-toggle-wrap">
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
               {isDark ? (
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <i className="far fa-moon" style={{ fontSize: '16px' }}></i>
               ) : (
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <i className="far fa-sun" style={{ fontSize: '16px' }}></i>
               )}
               <span>{isDark ? "Dark mode" : "Light mode"}</span>
             </div>
@@ -136,23 +121,15 @@ export default function Shell({
           </div>
           <button onClick={toggleTheme} className="theme-icon-btn" aria-label="Toggle Theme">
             {isDark ? (
-              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
+              <i className="far fa-moon" style={{ fontSize: '20px' }}></i>
             ) : (
-              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5"/>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
+              <i className="far fa-sun" style={{ fontSize: '20px' }}></i>
             )}
           </button>
 
           <div className="user-profile">
-            <div className="user-avatar">
-              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+            <div className="user-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <i className="far fa-user" style={{ fontSize: '20px' }}></i>
             </div>
             <div className="user-info">
               <strong>Demo User</strong>
