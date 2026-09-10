@@ -21,7 +21,7 @@ Cuti tahunan diajukan paling lambat 3 hari kerja sebelum tanggal mulai.
 Atasan wajib menjawab pengajuan cuti dalam 2 hari kerja.
 
 ## Kerja dari Rumah
-Karyawan Sigap bekerja dari rumah pada hari Senin dan Jumat.
+Karyawan Sigap bekerja dari rumah (WFH, work from home) pada hari Senin dan Jumat.
 Selasa sampai Kamis adalah hari wajib hadir di kantor.
 Perubahan jadwal kerja dari rumah butuh persetujuan atasan langsung dan berlaku per minggu.
 

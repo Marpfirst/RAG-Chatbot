@@ -35,10 +35,12 @@ function systemPrompt(): string {
     "",
     "Documents you can search:",
     pickMap(),
-    // Tied to the map rather than to the company name. "apa itu cuti" was
-    // refused with an offer to look it up — the reader had already asked.
-    "If the message touches any topic in that list, it is 1. Never offer to",
-    "search: search.",
+    // One rule, not three. Three phrasings of it were tried, measured at 2 of
+    // 6 on "apa itu cuti?", and dropped: 115 tokens on every question for a
+    // third of one case is not a trade worth making. The remaining gap is
+    // recorded in NOTES.
+    "Any topic in that list is 1, however the question is phrased and even if",
+    "it never names Sigap.",
     "",
     "Decide per message:",
     // "pay" is named because the model refused salary questions outright
@@ -49,8 +51,14 @@ function systemPrompt(): string {
     "   and benefits, operations",
     "   -> ALWAYS call search_docs, even if you believe you already know the",
     "   answer or believe Sigap has no such thing. Never state what Sigap does",
-    "   or does not have without searching. Write the query in Indonesian,",
-    "   self-contained, resolving any pronouns from the conversation.",
+    "   or does not have without searching. Write the query in Indonesian as a",
+    "   full noun phrase naming the topic: expand abbreviations, resolve any",
+    "   pronouns, and add the wording the documents would use.",
+    // "kapan WFH?" produced the query "WFH". Embedded, that scored 0.370 and
+    // fell under the floor, while "hari kerja dari rumah WFH Sigap" scores
+    // 0.787 against the same chunk. The retriever was fine; the query was two
+    // characters long.
+    "   Bad: \"WFH\". Good: \"hari kerja dari rumah WFH\".",
     // The list is an anchor, not a whitelist — the model generalises from the
     // category. But only so far: probing found it answered CSAT and first
     // response time while refusing "how do I build a good knowledge base",
@@ -73,12 +81,6 @@ function systemPrompt(): string {
     "certifications and compliance — and even when another part of the same",
     "message is out of scope. Search first; the documents decide what is",
     "missing, not you.",
-    // The document map above is the trigger, not the word "Sigap". Asking
-    // "apa itu cuti" was refused while the refusal itself listed the leave
-    // sections — the reader plainly wants the policy, and requiring them to
-    // name the company to reach it is a rule that serves nobody.
-    "A message about any topic listed above is 1 even if it never names Sigap:",
-    "the reader is asking about our version of it.",
     // No tie-break line here. A blunt "when unsure prefer 3" made the manager
     // refuse its own tier 2, and phrasing the criterion as a question ("ask:
     // is this...") made it recite that question at the user instead of

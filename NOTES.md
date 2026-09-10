@@ -295,6 +295,39 @@ Memperbaikinya berarti memilih salah satu:
 Keduanya menukar sesuatu yang lebih berharga daripada yang didapat, jadi
 dibiarkan.
 
+### Query pencarian yang terlalu pendek, dan biaya mengulang aturan
+
+"kapan WFH?" dirutekan benar ke specialist lalu dijawab "tidak ada di dokumen",
+padahal kebijakannya ada. Retrieval tidak bersalah: manager menulis query
+pencarian **"WFH"** — satu kata. Yang di-embed jadi `"kapan WFH? WFH"`, skornya
+0,370, di bawah ambang 0,40.
+
+Query yang lebih kaya untuk chunk yang sama, `"hari kerja dari rumah WFH Sigap"`,
+mendapat **0,787**. Selisihnya bukan soal ambang atau `k`, melainkan dua
+karakter melawan sebuah frasa.
+
+Perbaikannya menyuruh manager menulis query sebagai frasa benda utuh —
+memanjangkan singkatan dan memakai kata yang dipakai dokumen — dengan satu
+contoh buruk dan satu contoh baik. Setelah itu skornya 0,638.
+
+Korpusnya juga diperbaiki: section "Kerja dari Rumah" kini menyebut "(WFH, work
+from home)", karena itu kata yang dipakai penanya. Pola yang sama seperti SLA.
+
+**Pengulangan aturan itu ada harganya, dan sempat saya bayar.** Untuk kasus
+"apa itu cuti?" — topik yang jelas ada di dokumen tapi ditanyakan secara
+definisi — saya menambahkan tiga aturan berbeda yang isinya sama. Memadatkannya
+jadi satu kalimat membuat kasus itu gagal lagi, jadi pengulangannya memang
+bekerja: model menimbang instruksi yang ditemuinya tiga kali lebih berat
+daripada sekali.
+
+Tapi setelah diukur enam kali, hasilnya cuma **2 dari 6 benar**, dengan ongkos
+~115 token di **setiap** pertanyaan. Sepertiga keberhasilan pada satu kasus
+tidak sebanding, jadi ketiga aturan itu dilepas dan disisakan satu.
+
+"apa itu cuti?" karena itu masih sering ditolak. Bentuk "apa itu X" di mana X
+adalah topik yang terdokumentasi adalah celah yang belum tertutup — sementara
+"berapa lama cuti tahunan?" dan "kapan WFH?" dijawab benar dan konsisten.
+
 ### Batas antara "umum" dan "di luar domain" tidak punya kebenaran objektif
 
 Ini keterbatasan paling mendasar di proyek ini, dan tidak akan hilang dengan
@@ -468,6 +501,10 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   manager skornya lebih rendah daripada query yang saya tulis manual, sehingga
   ambang 0,49 yang terlihat aman di probe justru merusak sistem — pita amannya
   lebih sempit dari yang terlihat.
+- **"apa itu X" untuk topik yang terdokumentasi sering ditolak.** "berapa lama
+  cuti tahunan?" dijawab benar; "apa itu cuti?" ditolak di 4 dari 6 percobaan.
+  Tiga aturan prompt dicoba dan dilepas lagi karena ongkosnya ~115 token per
+  pertanyaan untuk sepertiga keberhasilan.
 - **Rate limit berbagi jatah dalam satu alamat.** Dihitung per alamat klien,
   15 per menit. Longgar untuk satu orang, tapi satu kantor di balik NAT berbagi
   angka itu, dan pemanggil terdistribusi sama sekali tidak tertahan. Ini
