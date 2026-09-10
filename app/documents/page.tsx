@@ -41,11 +41,10 @@ export default async function Documents() {
       <div className="page">
         <div className="page-inner">
           <h2>Documents</h2>
-          <p>
-            {docs.length} documents · {chunks.length} sections ·{" "}
-            {total.toLocaleString("en-US")} tokens total. This is what the specialist
-            searches; each section is one unit that can be retrieved on its own.
-            Click a row to read it.
+          <p style={{color: 'var(--text-muted)'}}>
+            {docs.length} dokumen · {chunks.length} bagian ·{" "}
+            {total.toLocaleString("en-US")} token keseluruhan. Ini adalah sumber data pencarian.
+            Setiap bagian dapat ditarik secara terpisah. Klik pada baris mana saja untuk membaca isinya.
           </p>
 
           {error && <p className="hint">Could not load: {error.message}</p>}
