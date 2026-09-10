@@ -8,8 +8,13 @@ import { useRouter } from "next/navigation";
  *
  * Client-side navigation serves a cached copy of a dynamic route's payload, so
  * clicking History straight after asking a question showed the list as it stood
- * before the answer landed. `experimental.staleTimes` is meant to control that
- * and did not take effect here, so the page asks for fresh data itself.
+ * before the answer landed.
+ *
+ * Two separate caches were in play. `cache: "no-store"` in lib/db.ts fixed the
+ * server side. This handles the client router cache, which
+ * `experimental.staleTimes: { dynamic: 0 }` did not: removing this component
+ * and testing again put the list one question behind. Costs one refetch of
+ * around 130ms per visit, against a page that renders in about the same.
  *
  * Safe to run on mount: refresh() replaces the server payload without
  * remounting client components, so it cannot loop.
