@@ -11,21 +11,82 @@ import { db } from "@/lib/db";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-/** Rule-based guards. Cheap, deterministic, and they run before any API call. */
-async function guard(conversationId: string, message: string) {
-  if (!message.trim()) return "Pertanyaan kosong.";
-  if (message.length > env.maxInputChars())
-    return `Pertanyaan terlalu panjang (maks ${env.maxInputChars()} karakter).`;
+const LOOPBACK = new Set(["::1", "127.0.0.1", "::ffff:127.0.0.1", "localhost"]);
 
+/**
+ * The client's address, or null when there is no one to rate limit.
+ *
+ * `x-real-ip` is preferred because Vercel sets it itself. `x-forwarded-for` can
+ * carry values the caller sent, so only its first entry is trusted, and only as
+ * a fallback.
+ *
+ * Loopback returns null on purpose. `next dev` does populate `x-forwarded-for`
+ * for local requests — an assumption that was wrong the first time and only
+ * surfaced when `npm run eval` hit the limit halfway through its 24 questions.
+ * A caller on the loopback interface is the developer, not a stranger. On a
+ * deployment the client address is never loopback.
+ */
+function clientIp(req: NextRequest): string | null {
+  const real = req.headers.get("x-real-ip")?.trim();
+  const fwd = req.headers.get("x-forwarded-for")?.split(",")[0].trim();
+  const ip = real || fwd;
+  if (!ip || LOOPBACK.has(ip)) return null;
+  return ip;
+}
+
+type Blocked = { error: string; status: number };
+
+/** Rule-based guards. Cheap, deterministic, and they run before any API call. */
+async function guard(req: NextRequest, message: string): Promise<Blocked | null> {
+  if (!message.trim()) return { error: "Pertanyaan kosong.", status: 400 };
+  if (message.length > env.maxInputChars())
+    return {
+      error: `Pertanyaan terlalu panjang (maks ${env.maxInputChars()} karakter).`,
+      status: 400,
+    };
+
+  const ip = clientIp(req);
+  if (!ip) return null;
+
+  const client = db();
   const since = new Date(Date.now() - 60_000).toISOString();
-  const { count } = await db()
-    .from("messages")
+
+  // Counted per address rather than per conversation. The old guard counted
+  // messages inside one conversation, which a caller bypassed by never sending
+  // a conversationId — every request then began a fresh conversation whose
+  // count was zero. An address is not the caller's to choose.
+  const { count, error } = await client
+    .from("request_log")
     .select("id", { count: "exact", head: true })
-    .eq("conversation_id", conversationId)
-    .eq("role", "user")
+    .eq("ip", ip)
     .gte("created_at", since);
 
-  if ((count ?? 0) >= 10) return "Terlalu cepat. Tunggu sebentar.";
+  // Fails open on purpose. If the table is missing — the migration was not run
+  // — throwing here would take the whole chat down to protect a budget. A
+  // limiter that is broken should not break the product it guards.
+  if (error) {
+    console.error("rate limit unavailable, allowing request:", error.message);
+    return null;
+  }
+
+  if ((count ?? 0) >= env.rateLimitPerMin())
+    return {
+      error: "Terlalu banyak permintaan. Coba lagi sebentar lagi.",
+      status: 429,
+    };
+
+  await client.from("request_log").insert({ ip });
+
+  // Only the last minute is ever read. Pruning occasionally rather than on
+  // every request keeps the write cost down; Supabase's free tier has no
+  // scheduler to do it instead.
+  if (Math.random() < 0.02) {
+    await client
+      .from("request_log")
+      .delete()
+      .lt("created_at", new Date(Date.now() - 600_000).toISOString());
+  }
+
   return null;
 }
 
@@ -39,10 +100,16 @@ export async function POST(req: NextRequest) {
     if (typeof message !== "string")
       return NextResponse.json({ error: "message required" }, { status: 400 });
 
-    const convId = conversationId || (await newConversation());
+    // Guards run before a conversation is created, so a blocked request leaves
+    // nothing behind in the database.
+    const blocked = await guard(req, message);
+    if (blocked)
+      return NextResponse.json(
+        { error: blocked.error },
+        { status: blocked.status }
+      );
 
-    const blocked = await guard(convId, message);
-    if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
+    const convId = conversationId || (await newConversation());
 
     const result = env.naiveMode()
       ? await naiveTurn(convId, message)

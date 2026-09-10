@@ -112,8 +112,9 @@ search query, which is what makes follow-ups like *"and the bigger plan?"* work.
 ### 📉 A bounded worst case, not just a good average
 
 `max_tokens` is capped server-side, over-long input is rejected before any API
-call, and questions outside the domain are refused in about 20 tokens. Average
-token counts are easy to polish; the tail is what actually hurts.
+call, questions outside the domain are refused in about 20 tokens, and requests
+are rate limited per client address. Average token counts are easy to polish;
+the tail is what actually hurts.
 
 ### 🪶 Out-of-corpus questions are cheap, not expensive
 
@@ -270,9 +271,11 @@ Stated here rather than left to be discovered:
   42%"*. That figure looks worse than it is: when one chunk is correct and five
   are sent, precision **cannot** exceed 0.20 — it is arithmetic, not quality.
   The tokens are the real cost.
-- **Rate limiting is per conversation**, so a client that simply omits
-  `conversationId` bypasses it entirely. Written when this only ran locally.
-  For a public deployment on a fixed API budget, it should count by IP too.
+- **Rate limiting shares a budget across one address.** Requests are counted per
+  client address, 15 a minute — generous for a person, but an office behind one
+  NAT shares that allowance, and a distributed caller is not stopped at all. It
+  bounds the rate, not the total: the actual ceiling on spend is the provider's
+  own budget cap.
 - **Conversation history lives in one browser tab.** A recent-chats list was
   built and then deliberately removed: it served none of the project's stated
   requirements, and a schema migration close to a deadline was not a trade worth

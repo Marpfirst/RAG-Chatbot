@@ -63,6 +63,26 @@ create table if not exists usage_log (
 
 create index if not exists usage_log_message_idx on usage_log (message_id);
 
+-- ---------------------------------------------------------------- rate limit
+
+-- One row per accepted chat request, keyed by client address.
+--
+-- An earlier guard counted messages inside a conversation, which a client
+-- bypassed by never sending a conversationId — every request then began a fresh
+-- conversation whose count was zero. The address is not the caller's to choose.
+
+create table if not exists request_log (
+  id         bigserial primary key,
+  ip         text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists request_log_ip_time_idx
+  on request_log (ip, created_at desc);
+
+create index if not exists request_log_time_idx
+  on request_log (created_at);
+
 -- ---------------------------------------------------------------- retrieval
 
 -- Vector search over the corpus. Called from lib/retrieval.ts.
@@ -134,11 +154,12 @@ alter table chunks        enable row level security;
 alter table conversations enable row level security;
 alter table messages      enable row level security;
 alter table usage_log     enable row level security;
+alter table request_log   enable row level security;
 
-revoke all on chunks, conversations, messages, usage_log from anon, authenticated;
+revoke all on chunks, conversations, messages, usage_log, request_log from anon, authenticated;
 revoke all on function match_chunks from anon, authenticated;
 
-grant all on chunks, conversations, messages, usage_log to service_role;
+grant all on chunks, conversations, messages, usage_log, request_log to service_role;
 grant usage, select on all sequences in schema public to service_role;
 grant execute on function match_chunks to service_role;
 

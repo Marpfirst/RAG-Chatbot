@@ -341,6 +341,11 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   manager skornya lebih rendah daripada query yang saya tulis manual, sehingga
   ambang 0,49 yang terlihat aman di probe justru merusak sistem — pita amannya
   lebih sempit dari yang terlihat.
+- **Rate limit berbagi jatah dalam satu alamat.** Dihitung per alamat klien,
+  15 per menit. Longgar untuk satu orang, tapi satu kantor di balik NAT berbagi
+  angka itu, dan pemanggil terdistribusi sama sekali tidak tertahan. Ini
+  membatasi laju, bukan total — batas pengeluaran yang sebenarnya tetap budget
+  cap di sisi penyedia.
 - **Pencarian murni vektor.** Identifier eksak (nama paket, pola tag `rel-*`)
   bisa meleset. Di 38 chunk belum jadi masalah; di korpus besar, hybrid search
   yang pertama saya tambahkan.

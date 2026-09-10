@@ -33,6 +33,7 @@ export const env = {
   maxTokensManager: () => num("MAX_TOKENS_MANAGER", 250),
   maxTokensSpecialist: () => num("MAX_TOKENS_SPECIALIST", 400),
   maxInputChars: () => num("MAX_INPUT_CHARS", 1000),
+  rateLimitPerMin: () => num("RATE_LIMIT_PER_MIN", 15),
 
   naiveMode: () => process.env.NAIVE_MODE === "true",
 };
