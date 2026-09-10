@@ -95,10 +95,22 @@ Per kategori:
 | Tidak ada di dokumen | 2.554 | 647 | 75% |
 | Permintaan di luar domain | 3.296 | 418 | 87% |
 
-Yang paling berdampak, berurutan: **top-k retrieval** (mengirim ~250 token
-konteks, bukan 3.034), **pagar `max_tokens` plus penolakan di luar domain**
-(kasus terburuk turun dari 3.885 jadi ~370 token), lalu **memadatkan peta
-dokumen**.
+Yang paling berdampak, berurutan: **top-k retrieval** (mengirim ~230 token
+konteks, bukan seluruh korpus), **pagar `max_tokens` plus penolakan di luar
+domain** (kasus terburuk turun dari 3.885 jadi ~370 token), lalu **memadatkan
+peta dokumen**.
+
+> **Catatan tokenizer.** Angka "seluruh korpus" di tabel ini, dan semua angka
+> per-chunk yang pernah dikutip dari kolom `chunks.token_count`, dihitung dengan
+> **`cl100k_base`** — karena kolom itu diisi dari `usage.prompt_tokens` API
+> embedding (`text-embedding-3-small`), bukan dari model chat. Dengan
+> `o200k_base`, tokenizer `gpt-4o-mini`, korpus yang sama berukuran **2.480
+> token**, bukan 3.056.
+>
+> Angka baseline naif dan seluruh kolom "avg token" di dokumen ini **tidak**
+> terpengaruh: semuanya dibaca dari `usage` API chat, jadi sudah `o200k`.
+> Yang terpengaruh hanya angka turunan yang mengutip `token_count`. Atribusi
+> token per-komponen di §7 direkonstruksi terpisah dengan `o200k_base`.
 
 Perhatikan arah tabelnya: angka turun sampai 456, lalu **naik lagi** ke 666,
 lalu ke 842. Kenaikan itu disengaja — setiap kenaikan membeli satu perbaikan
@@ -600,14 +612,20 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
 
 ## 6. Yang saya tahu masih kurang
 
-- **Sekitar 340 token terbuang di tiap pertanyaan dokumen.** `k` dipatok 5,
+- **Sekitar 175 token jadi bantalan di tiap pertanyaan dokumen.** `k` dipatok 5,
   padahal sebagian besar pertanyaan terjawab oleh satu section — empat chunk
   sisanya jadi bantalan. `k=5` dipertahankan karena pertanyaan perbandingan
   memang butuh dua, dan `k=3` merusak pertanyaan susulan saat diukur. Adaptive
   `k` sudah dicoba di dua ambang dan hasilnya lebih buruk; layak dicoba lagi
   sekarang setelah query retrieval berubah.
 
-  Catatan soal angkanya: harness melaporkan ini sebagai **precision@k 36%**, dan
+  Angka 340 di versi sebelumnya salah, dan salahnya layak disebut: kolom
+  `chunks.token_count` diisi dari `usage.prompt_tokens` **API embedding**, jadi
+  dihitung dengan `cl100k_base` — tokenizer model embedding, bukan model chat.
+  Model chat menagih dengan `o200k_base`, yang di korpus ini sekitar 19% lebih
+  hemat. Semua angka per-chunk yang diambil dari kolom itu ikut kelebihan.
+
+  Catatan soal angkanya: harness melaporkan ini sebagai **precision@k 37%**, dan
   angka itu terlihat lebih buruk dari kenyataannya. Kalau satu chunk yang benar
   dan lima yang dikirim, precision **tidak mungkin** melebihi 0,20 — itu
   aritmetika `k` yang dipatok, bukan mutu retrieval. Yang benar-benar layak
@@ -645,3 +663,94 @@ termasuk menolak `k=1` yang tampak menang di atas kertas.
   disiapkan (`docs/en/`, `CORPUS_LANG`), tapi waktu habis di masalah retrieval.
   Angka "Indonesia ~15% lebih boros" di catatan ini adalah perkiraan, bukan hasil
   pengukuran.
+
+---
+
+## 7. Ke mana 841 token itu sebenarnya pergi
+
+Setelah rute benar 34/34, pertanyaannya berubah: bukan lagi "bisa lebih murah?"
+tapi **"murahnya di mana?"**. Atribusi di bawah direkonstruksi dari
+`usage_log` untuk satu run penuh (`eval/results/SHIP.json`), dan ke-34 kasusnya
+cocok persis dengan angka yang dilaporkan harness. Komponen yang tidak disimpan
+terpisah (system prompt, riwayat, konteks) dihitung ulang dengan `o200k_base`.
+
+| Komponen | token/pertanyaan | % |
+|---|---:|---:|
+| System prompt manager — teks kebijakan | 464,0 | 55,1% |
+| Specialist — konteks dokumen | 112,9 | 13,4% |
+| System prompt manager — peta dokumen | 94,0 | 11,2% |
+| Manager — skema tool + chat template | 49,0 | 5,8% |
+| Specialist — preamble tetap | 35,4 | 4,2% |
+| Output manager — jawaban (19 kasus) | 33,3 | 4,0% |
+| Output specialist | 13,6 | 1,6% |
+| Specialist — pertanyaan + rewrite + template | 10,3 | 1,2% |
+| Output manager — tool call (15 kasus) | 9,6 | 1,1% |
+| Teks pertanyaan | 8,8 | 1,0% |
+| Embedding | 8,5 | 1,0% |
+| Riwayat percakapan (2 kasus) | 2,0 | 0,2% |
+
+Temuan utamanya satu kalimat: **setiap pertanyaan membayar 616 token sebelum
+apa pun terjadi** — 558 system prompt, 49 template dan skema tool, ~9
+pertanyaannya sendiri. Itu 73% dari rata-rata, dan kasus termurah di seluruh
+benchmark adalah 645 token.
+
+`cached_tokens` **nol di ke-68 call**. Prompt manager 558 token; ambang cache
+otomatis OpenAI 1.024 token. Sistem ini terlalu kecil untuk di-cache.
+
+### Tiga percobaan penghematan, satu variabel per percobaan
+
+Benchmark-nya tidak diubah: 34 soal yang sama, assertion yang sama.
+
+| Percobaan | avg token | Lulus | Putusan |
+|---|---:|---:|---|
+| Baseline | 841,4 | 34/34 | — |
+| 1. `DOCMAP=compact` | 781 | 31/34 | **dibatalkan** |
+| 2. Header `[Doc > Section]` dibuang saat generate | **818** | **34/34** | **dipakai** |
+| 3a. Kebijakan ditulis ulang padat (349 tok) | 694 | 32/34 | dibatalkan |
+| 3b. 3a + rule 1 & 2 diperbaiki | 694 | 31/34 | dibatalkan |
+| 3c. Hanya blok Rules dipadatkan (448 tok) | 801 | 32/34 | dibatalkan |
+
+**Percobaan 1 — peta dokumen dipadatkan (94 → 25 token).** Pernah ditolak dulu,
+dicoba lagi karena penolakan itu mendahului instruksi query-expansion yang
+seharusnya menggantikan fungsi kosakatanya. Ternyata tidak menggantikan. Dua
+kerusakan: `g04` ("Gimana cara nulis balasan support yang sopan?") berbelok ke
+specialist dan dijawab "tidak ada di dokumen", dan `d06` tetap benar tapi
+precision-nya jatuh dari 1,0 ke 0,2 — satu chunk jadi lima, +221 token. Judul
+section ternyata bekerja di **dua** tempat sekaligus: sinyal routing, dan
+kosakata query. Query-expansion hanya menggantikan yang kedua.
+
+**Percobaan 2 — header dibuang saat generate.** Prefiks `[Doc > Section]` biaya
+12,6 token per chunk, 480 token di seluruh korpus, ~51 token per panggilan
+specialist. Ia jelas berguna saat **retrieval**: ia ikut di-embed, dan itulah
+yang memisahkan tiga section cuti yang nyaris identik di ruang vektor. Saat
+**generate**, konteksnya sudah menyempit. Dibuang hanya di `runSpecialist`;
+baris chunk, embedding, dan ranking tidak disentuh.
+
+Hasil: 34/34, 841,4 → 818 token. recall@k tetap 100%, precision@k tetap sama,
+dan **tidak ada satu pun kasus yang retrieval-nya berubah** — bukti bahwa
+perubahannya memang hanya di sisi generate. Kasus yang paling rawan diperiksa
+satu per satu: `d02`/`d05`/`b10` tetap memisahkan cuti tahunan dari cuti sakit,
+`m02` tetap memisahkan batas lampiran dari batas ekspor, `b04` tetap menjawab
+Senin dan Jumat.
+
+**Percobaan 3 — kebijakan manager dipadatkan.** Ini target terbesar: 464 token,
+55% dari seluruh benchmark. Tiga variasi dicoba, tidak ada yang lolos.
+
+- **3a**, ditulis ulang jadi 349 token: `a03` menjawab "Python is a high-level,
+  interpreted programming language" — frasa "however the question is phrased"
+  di aturan istilah menembus pagar domain. Dan `b04` ("Hari apa karyawan Sigap
+  WFH?") justru **ditolak**, karena kalimat "This includes topics you believe
+  Sigap does not have" ikut terpangkas.
+- **3b**, dua kerusakan itu diperbaiki: turun jadi 31/34 dan recall 83% — `d06`
+  ikut rusak. Memperbaiki dua tempat membuka yang ketiga.
+- **3c**, hanya blok Rules yang dipadatkan: hanya hemat **16 token**, dan
+  membayar dua kasus batas (`b02`, `b09`) yang kembali mengelak.
+
+Kesimpulannya bukan "belum ketemu caranya", tapi **prompt ini ada di minimum
+lokal**: memangkas 16 token pun sudah berbiaya dua kasus. Blok Rules yang
+kelihatan seperti tumpukan tambalan memang tumpukan tambalan — tapi setiap
+tambalannya masih menahan sesuatu yang terukur.
+
+Yang tersisa dan tidak dicoba, sengaja: menaikkan prompt di atas 1.024 token
+supaya kena cache otomatis. Itu menurunkan **biaya** tapi menaikkan **token**,
+dan yang diukur di tugas ini token.

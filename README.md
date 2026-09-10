@@ -195,7 +195,7 @@ API's `usage` field:
 
 | | Naive baseline | This system |
 |---|---|---|
-| Tokens per question | 2,654 | **842** (−68%) |
+| Tokens per question | 2,654 | **818** (−69%) |
 | Golden set | — | **34/34** |
 | recall@k | — | **100%** |
 
@@ -204,19 +204,23 @@ Per category:
 | Category | Naive | Now |
 |---|---|---|
 | General knowledge | 2,640 | 692 |
-| Scope boundary | — | 683 |
-| Needs the documents | 2,519 | 1,078 |
-| Comparison across two sections | 2,636 | 1,093 |
-| Absent from the documents | 2,554 | 893 |
-| Out of domain | 3,296 | 655 |
-| Follow-up question | 2,575 | 1,165 |
+| Scope boundary | — | 684 |
+| Needs the documents | 2,519 | 1,019 |
+| Comparison across two sections | 2,636 | 1,051 |
+| Absent from the documents | 2,554 | 864 |
+| Out of domain | 3,296 | 651 |
+| Follow-up question | 2,575 | 1,076 |
 
 The golden set grew from 24 to 34 questions, so the totals are not directly
 comparable to an earlier reading of this table. The comparable measurement is
 the one taken on the same 34 questions before and after the routing rewrite:
 **31/34 at 789 tokens → 34/34 at 842 tokens.** Fifty-three more tokens per
 question bought three classes of in-domain question that used to be refused
-outright.
+outright. A later measured change — dropping the `[Doc > Section]` header from
+the context sent to the specialist, but not from what is embedded — brought that
+back to **818** with the score unchanged. Two other reductions were tried
+against the same 34 questions and both cost correctness; the numbers are in
+[NOTES.md](NOTES.md) §7.
 
 The naive baseline — whole corpus in every request, full history, no retrieval —
 is still in the repository behind `NAIVE_MODE=true`, so the "before" number can
@@ -275,17 +279,23 @@ two worst bugs in this project both lived exactly there.
 
 Stated here rather than left to be discovered:
 
-- **About 340 tokens per document question are wasted.** `k` is fixed at 5, but
+- **About 175 tokens per document question are padding.** `k` is fixed at 5, but
   most questions are answered by one section, so four of the five chunks are
-  padding. `k=5` is kept because comparison questions genuinely need two, and
-  `k=3` broke follow-ups when measured. Adaptive `k` was tried at two thresholds
-  and made things worse; it is worth another attempt now that the retrieval
-  query has changed.
+  ballast. `k=5` is kept because comparison questions genuinely need two, and
+  both `k=4` and `k=3` broke the same follow-up case when measured. Adaptive `k`
+  was tried at two thresholds and made things worse.
 
   This is the honest form of a number the harness reports as *"precision@k
-  36%"*. That figure looks worse than it is: when one chunk is correct and five
+  37%"*. That figure looks worse than it is: when one chunk is correct and five
   are sent, precision **cannot** exceed 0.20 — it is arithmetic, not quality.
   The tokens are the real cost.
+
+  An earlier version of this line said *340 tokens*. That was wrong, and the
+  error is worth naming: `chunks.token_count` is filled in from the **embedding**
+  API's `usage.prompt_tokens`, so it counts with `cl100k_base`, the embedding
+  model's tokenizer. The chat model bills with `o200k_base`, which is about 19%
+  cheaper on this corpus. Every per-chunk figure taken from that column was
+  therefore inflated.
 - **The line between "general but relevant" and "out of domain" has no
   objective answer.** The task specification says the manager may answer general
   questions and does not define *general*, so every routing score in this

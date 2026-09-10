@@ -44,7 +44,19 @@ export async function runSpecialist(
     };
   }
 
-  const context = chunks.map((c) => c.content).join("\n\n");
+  // The "[Doc > Section]" prefix is stripped here and only here.
+  //
+  // It earns its place at retrieval time — it is part of what was embedded, and
+  // it is what separates three near-identical leave sections in vector space.
+  // At generation time the specialist already has a narrowed context, and the
+  // prefix costs 12.6 tokens per chunk, about 51 on a five-chunk call.
+  //
+  // Nothing upstream changes: the chunk rows, the embeddings and the ranking
+  // are the same, and app/api/chat/route.ts still strips the same prefix
+  // separately for the sources panel.
+  const context = chunks
+    .map((c) => c.content.replace(/^\[[^\]]*\]\s*/, "").trim())
+    .join("\n\n");
 
   const started = Date.now();
   const res = await chatClient().chat.completions.create({
