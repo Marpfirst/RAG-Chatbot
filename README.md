@@ -9,6 +9,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
 ![Tokens](https://img.shields.io/badge/tokens%2Fquestion-843-informational)
 ![Golden set](https://img.shields.io/badge/golden%20set-40%2F42-brightgreen)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **[Live demo](https://rag-chatbot-marp.vercel.app)** ·
 [Repository](https://github.com/Marpfirst/RAG-Chatbot)
@@ -153,3 +154,10 @@ eval/          golden.jsonl + three saved results
 scripts/       seed, eval, repro, smoke
 supabase/      schema.sql
 ```
+
+## License
+
+[MIT](LICENSE) — © 2026 Alvin.
+
+The corpus in `docs/id/` describes a fictional company. Any resemblance to a
+real product named Sigap is coincidental.
